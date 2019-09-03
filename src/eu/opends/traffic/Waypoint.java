@@ -36,6 +36,7 @@ public class Waypoint
 	private String trafficLightID;
 	private Float headLightIntensity;
 	private String turnSignal;
+	private Boolean brakeLightOn;
 	private Integer waitingTime;
 	
 	
@@ -54,17 +55,20 @@ public class Waypoint
 	 * @param trafficLightID
 	 * 			ID of related traffic light (if available, else null)
 	 * 
+	 * @param headLightIntensity
+	 * 			intensity change of head light (if available, else null)
+	 * 
 	 * @param turnSignal 
 	 * 			state change of turn signal (if available, else null)
 	 * 
-	 * @param headLightIntensity
-	 * 			intensity change of head light (if available, else null) 
+	 * @param brakeLightOn
+	 * 			state change of brake light (if available, else null)
 	 * 	 
 	 * @param waitingTime
-	 * 			amount of milliseconds to wait at this waypoint (if available, else null) 
+	 * 			amount of milliseconds to wait at this waypoint (if available, else null)
 	 */
 	public Waypoint(String name, Vector3f position, float speed, String trafficLightID, 
-			Float headLightIntensity, String turnSignal, Integer waitingTime) 
+			Float headLightIntensity, String turnSignal, Boolean brakeLightOn, Integer waitingTime) 
 	{
 		this.name = name;
 		this.speed = speed;
@@ -72,6 +76,7 @@ public class Waypoint
 		this.trafficLightID = trafficLightID;
 		this.headLightIntensity = headLightIntensity;
 		this.turnSignal = turnSignal;
+		this.brakeLightOn = brakeLightOn;
 		this.waitingTime = waitingTime;
 	}
 
@@ -148,6 +153,18 @@ public class Waypoint
 		return turnSignal;
 	}
 	
+	
+	/**
+	 * Getter method for the state of brake light
+	 * 
+	 * @return
+	 * 			true, if brake light on
+	 */
+	public Boolean isBrakeLightOn()
+	{
+		return brakeLightOn;
+	}
+
 	
 	/**
 	 * Getter method for the rest time at this way point

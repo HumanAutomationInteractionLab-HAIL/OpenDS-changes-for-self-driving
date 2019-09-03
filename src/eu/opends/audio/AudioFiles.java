@@ -56,6 +56,7 @@ public class AudioFiles
 		
 		addAudioFile("engineStart", "Sounds/Effects/start2.wav", false, 0.25f, 1f);
 		addAudioFile("engineIdle", "Sounds/Effects/idle2.wav", true, 0.25f, 1f);
+		addAudioFile("engineIdle", "Sounds/Effects/honda_crv_idle.wav", true, 8f, 1f);
 		addAudioFile("engineStop", "Sounds/Effects/stop2.wav", false, 0.25f, 1f);
 		
 		addAudioFile("collision",  "Sounds/Effects/collision.wav", false, 0.5f, 1f);
@@ -64,6 +65,9 @@ public class AudioFiles
 		addAudioFile("potHole", "Sounds/Effects/wheelTouch.wav", false, 0.3f, 1f);
 		
 		addAudioFile("turnSignal", "Sounds/Effects/turnSignal.wav", false, 0.25f, 1.0f);
+		
+		addAudioFile("idle_low", "Sounds/Effects/idle_low.wav", true, 0.5f, 1f);
+		//addAudioFile("enduring", "Sounds/Effects/enduring.wav", true, 1.0f, 1.0f);
 		
 		return audioNodeList;
 	}

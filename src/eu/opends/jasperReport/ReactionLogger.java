@@ -151,7 +151,7 @@ public class ReactionLogger
 			// create PDF file
 			long start = System.currentTimeMillis();
 			JasperExportManager.exportReportToPdfFile(print, outputFolder + "/" + reportFileName);
-			System.out.println("PDF creation time : " + (System.currentTimeMillis() - start) + " ms");
+			//System.out.println("PDF creation time : " + (System.currentTimeMillis() - start) + " ms");
 			
 			// open PDF file
 			boolean suppressPDF = Simulator.getSettingsLoader().getSetting(Setting.Analyzer_suppressPDFPopup, 

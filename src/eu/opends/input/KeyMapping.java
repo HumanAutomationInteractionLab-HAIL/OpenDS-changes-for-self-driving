@@ -56,6 +56,7 @@ public class KeyMapping
 	public static KeyMapping HORN = new KeyMapping("horn", "horn", new String[] {"KEY_H"});
 	public static KeyMapping TOGGLE_MIN_SPEED = new KeyMapping("toggle_min_speed", "maintain min speed on/off", new String[] {"KEY_D"});
 	public static KeyMapping CRUISE_CONTROL = new KeyMapping("cruise_control", "cruise control on/off", new String[] {"KEY_X"});
+	public static KeyMapping AUTO_STEER = new KeyMapping("auto_steer", "auto steering on/off", new String[] {"KEY_Y"});
 	public static KeyMapping RESET_CAR = new KeyMapping("reset_car", "reset car", new String[] {"KEY_R"});
 	public static KeyMapping RESET_CAR_POS1 = new KeyMapping("reset_car_pos1", "reset car (pos 1)", new String[] {"KEY_1"});
 	public static KeyMapping RESET_CAR_POS2 = new KeyMapping("reset_car_pos2", "reset car (pos 2)", new String[] {"KEY_2"});
@@ -159,6 +160,7 @@ public class KeyMapping
 		keyMappingList.add(KeyMapping.HORN);
 		keyMappingList.add(KeyMapping.TOGGLE_MIN_SPEED);
 		keyMappingList.add(KeyMapping.CRUISE_CONTROL);
+		keyMappingList.add(KeyMapping.AUTO_STEER);
 		keyMappingList.add(KeyMapping.RESET_CAR);
 		keyMappingList.add(KeyMapping.RESET_CAR_POS1);
 		keyMappingList.add(KeyMapping.RESET_CAR_POS2);

@@ -19,8 +19,17 @@
 package eu.opends.traffic;
 
 import java.util.ArrayList;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import eu.opends.drivingTask.settings.SettingsLoader;
+import eu.opends.drivingTask.settings.SettingsLoader.Setting;
+import eu.opends.main.SimulationDefaults;
 
 import eu.opends.main.Simulator;
+
 
 /**
  * 
@@ -31,13 +40,22 @@ public class PhysicalTraffic extends Thread
 	private static ArrayList<TrafficCarData> vehicleDataList = new ArrayList<TrafficCarData>();
 	private static ArrayList<PedestrianData> pedestrianDataList = new ArrayList<PedestrianData>();
     private static ArrayList<TrafficObject> trafficObjectList = new ArrayList<TrafficObject>();
+    private static ArrayList<AnimatedRoadSignData> animatedRoadSignDataList = new ArrayList<AnimatedRoadSignData>();
 	private boolean isRunning = true;
 	private int updateIntervalMsec = 20;
 	private long lastUpdate = 0;
 
-       
+	
+	private boolean multiThreadingEnabled = false;
+    private int multiThreading_numberOfThreads = 0;
+    ScheduledThreadPoolExecutor executor; 
 	public PhysicalTraffic(Simulator sim)
 	{
+		multiThreadingEnabled = Simulator.getSettingsLoader().getSetting(Setting.MultiThreading_enableThreads, SimulationDefaults.MultiThreading_enableThreads);
+		multiThreading_numberOfThreads = Simulator.getSettingsLoader().getSetting(Setting.MultiThreading_numberOfThreads, SimulationDefaults.multiThreading_numberOfThreads);	
+		if (multiThreadingEnabled){
+				executor = new ScheduledThreadPoolExecutor(multiThreading_numberOfThreads);
+		}
 		for(TrafficCarData vehicleData : vehicleDataList)
 		{
 			// build and add traffic cars
@@ -48,6 +66,12 @@ public class PhysicalTraffic extends Thread
 		{
 			// build and add pedestrians
 			trafficObjectList.add(new Pedestrian(sim, pedestrianData));
+		}
+		
+		for(AnimatedRoadSignData animatedRoadSignData : animatedRoadSignDataList)
+		{
+			// build and add animated road signs
+			trafficObjectList.add(new AnimatedRoadSign(sim, animatedRoadSignData));
 		}
 	}
 	
@@ -68,7 +92,11 @@ public class PhysicalTraffic extends Thread
 	{
 		return trafficObjectList;		
 	}
-
+	
+	public static ArrayList<AnimatedRoadSignData> getAnimatedRoadSignDataList() 
+	{
+		return animatedRoadSignDataList;		
+	}
 	
 	public TrafficObject getTrafficObject(String trafficObjectName) 
 	{
@@ -119,13 +147,30 @@ public class PhysicalTraffic extends Thread
 	}
 	
 	
-	// TODO use thread instead
+	
 	public void update(float tpf)
 	{
-		for(TrafficObject trafficObject : trafficObjectList)
-			trafficObject.update(tpf, trafficObjectList);	
+		if (getMultiThreadingEnable()){
+			for (int i=0; i<getTrafficObjectList().size(); i++){
+				TrafficObject singleCar = getTrafficObjectList().get(i);
+				Runnable worker = new MyRunnable(tpf, singleCar);
+				executor.execute(worker);
+			}
+		}
+		else {
+			for(TrafficObject trafficObject : trafficObjectList){
+				trafficObject.update(tpf, trafficObjectList);
+			}
+		}
 	}
-
+	
+	public void executorShutdown(){
+		executor.shutdown();		
+	}
+	
+	public Boolean getMultiThreadingEnable() {
+			return this.multiThreadingEnabled;
+	}
 
 	public synchronized void close() 
 	{
@@ -137,5 +182,24 @@ public class PhysicalTraffic extends Thread
 				((TrafficCar) trafficObject).close();
 	}
 
-
+	
+	public static class MyRunnable implements Runnable {
+		private TrafficObject singleVehicle;
+		private float tpf;
+		
+		MyRunnable(float tpf, TrafficObject singleVehicle){
+			this.singleVehicle = singleVehicle;
+			this.tpf = tpf;
+		}
+		
+		@Override
+		public void run() {
+			try {
+				singleVehicle.update(tpf, trafficObjectList);
+			} catch (Exception e){
+				System.out.println(e);
+			}
+			
+		}
+	}
 }

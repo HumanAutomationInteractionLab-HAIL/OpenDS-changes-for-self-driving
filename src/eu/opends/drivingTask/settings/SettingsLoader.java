@@ -91,6 +91,8 @@ public class SettingsLoader
 		General_topView_carOffset("settings:general/settings:topView/settings:carOffset"),
 		General_captureVideo("settings:general/settings:captureVideo"),
 		General_cameraMode("settings:general/settings:cameraMode"),
+		General_USMeasurementSystem("settings:general/settings:USMeasurementSystem"),
+		HighPolygon_carModel("settings:shadowCarModel/settings:enableHighPolyCarModel"),
 		Analyzer_fileName("settings:analyzer/settings:fileName"),
 		Analyzer_suppressPDFPopup("settings:analyzer/settings:suppressPDFPopup"), 
 		ObjectLocator_enable("settings:objectLocator/settings:enable"),
@@ -170,7 +172,9 @@ public class SettingsLoader
 		Eyetracker_warningFrame_threshold("settings:eyetracker/settings:warningFrame/settings:threshold"),
 		Eyetracker_warningFrame_flashingInterval("settings:eyetracker/settings:warningFrame/settings:flashingInterval"),
 		OculusRift_isAttached("settings:oculusRift/settings:isAttached"),
-		Maritime_displayMode("settings:maritime/settings:displayMode");
+		Maritime_displayMode("settings:maritime/settings:displayMode"),
+		MultiThreading_enableThreads("settings:multiThreading/settings:enableThreads"),
+		MultiThreading_numberOfThreads("settings:multiThreading/settings:numberOfThreads");
 		
 		
 		private String path;

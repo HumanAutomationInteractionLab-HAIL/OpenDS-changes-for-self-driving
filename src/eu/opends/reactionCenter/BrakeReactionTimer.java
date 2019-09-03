@@ -20,19 +20,26 @@ package eu.opends.reactionCenter;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Vector;
 import java.util.Map.Entry;
 
 import com.jme3.math.Vector3f;
+import com.jme3.scene.Spatial;
 
 import eu.opends.audio.AudioCenter;
 import eu.opends.environment.LaneLimit;
 import eu.opends.jasperReport.ReactionLogger;
 import eu.opends.main.Simulator;
+import eu.opends.tools.Util;
+import eu.opends.traffic.PhysicalTraffic;
+import eu.opends.traffic.TrafficObject;
 
 /**
  * 
  * @author Rafael Math
  */
+
+// Also read the LaneChangeReactionTimer comments, a lot of them apply to this one too
 public class BrakeReactionTimer extends ReactionTimer 
 {
 	private long timer;
@@ -49,6 +56,11 @@ public class BrakeReactionTimer extends ReactionTimer
 	private String failSound;
 	private String successSound;
 	private String startLane;
+	private String leadVehicle;
+	private String leadObstacle;
+	private Vector TTC;
+	private float avgTTC;
+	private float minTTC;
 	
 	private boolean soundTimerIsActive = false;
 	
@@ -62,7 +74,7 @@ public class BrakeReactionTimer extends ReactionTimer
 	
 	public void setup(String newReactionGroupID, float startSpeed,	float targetSpeed, boolean mustPressBrakePedal,
 			float taskCompletionTime, float taskCompletionDistance, boolean allowLaneChange, 
-			float holdSpeedFor, String failSound, String successSound, String newComment) 
+			float holdSpeedFor, String failSound, String successSound, String leadVehicle, String leadObstacle, String newComment) 
 	{
 		// check pre-condition
 		if(sim.getCar().getCurrentSpeedKmh() >= startSpeed)
@@ -81,6 +93,11 @@ public class BrakeReactionTimer extends ReactionTimer
 			this.successSound = successSound;
 			this.startLane = getCurrentLane();
 			this.hasPressedBrakepedal = false;
+			this.leadVehicle = leadVehicle;
+			this.leadObstacle = leadObstacle;
+			this.TTC= new Vector();
+			this.avgTTC = 0; 
+			this.minTTC = 0;
 			
 			trialLogger.setTask(1);
 			
@@ -123,6 +140,19 @@ public class BrakeReactionTimer extends ReactionTimer
 			hasPressedBrakepedal = (hasPressedBrakepedal || (sim.getCar().getBrakePedalIntensity() > 0));
 			
 			long currentTime = System.currentTimeMillis();
+
+			if(leadVehicle.equals(""))
+				TTC.add(getTTC(getObstacleLoc(leadObstacle),0));
+			else
+			{
+				TTC.add(getTTC(getVehicleLoc(leadVehicle),30));
+				System.out.println(getTTC(getVehicleLoc(leadVehicle),30));
+				System.out.println(getVehicleLoc(leadVehicle));
+				System.out.println(sim.getCar().getPosition());
+				System.out.println(sim.getCar().getCurrentSpeedKmh());
+			}
+			//System.out.println(TTC);
+			
 			
 			if(hasChangedLanes())
 				trialLogger.setAdditional_reaction(1);
@@ -138,7 +168,31 @@ public class BrakeReactionTimer extends ReactionTimer
 			
 			if(timeExceeded() || distanceExceeded())
 			{
+				trialLogger.setStartTime(startTime);
+				
+				float sumTTC=(float) TTC.get(0);
+				float minTTC=(float) TTC.get(0);
+				
+				for (int a=1;a<=TTC.size()-1;a++)
+				{
+					sumTTC=sumTTC+(float)TTC.get(a);
+					
+					if (minTTC>(float)TTC.get(a))
+					{
+						minTTC=(float)TTC.get(a);
+					}
+					
+				}
+				
+				avgTTC=sumTTC/TTC.size();
+				trialLogger.setAvgTTC(avgTTC);
+				trialLogger.setMinTTC(minTTC);
+				
+				//if(minTTC<=0.0715)
+					//trialLogger.setNoCollisions(1);
+				
 				reportMissedReaction();
+				//System.out.println("MISSED1");
 			}
 			else if(hasChangedLanesWithoutPermission())
 			{
@@ -179,7 +233,36 @@ public class BrakeReactionTimer extends ReactionTimer
 			
 			if(correctReactionReported)
 			{
+				trialLogger.setStartTime(startTime);
+				//System.out.println("CORRECT");
 				//System.err.println("CORRECT");
+				float sumTTC=(float) TTC.get(0);
+				float minTTC=(float) TTC.get(0);
+				
+				//System.out.println(sumTTC);
+				//System.out.println(minTTC);
+				//System.out.println(TTC.size());
+				
+				for (int a=1;a<=TTC.size()-1;a++)
+				{
+					sumTTC=sumTTC+(float)TTC.get(a);
+					
+					if (minTTC>(float)TTC.get(a))
+					{
+						minTTC=(float)TTC.get(a);
+					}
+					
+				}
+				
+				avgTTC=sumTTC/TTC.size();
+				trialLogger.setAvgTTC(avgTTC);
+				trialLogger.setMinTTC(minTTC);
+				
+				//if(minTTC<=0.0715)
+					//trialLogger.setNoCollisions(1);
+				
+				//System.out.println(avgTTC);
+				//System.out.println(minTTC);
 				
 				trialLogger.setBrakeRT_success((int)reactionTime);
 				
@@ -198,7 +281,37 @@ public class BrakeReactionTimer extends ReactionTimer
 			}
 			else if(failureReactionReported)
 			{
+				//System.out.println("FAILURE");
 				//System.err.println("FAILED");
+				trialLogger.setStartTime(startTime);
+				
+				float sumTTC=(float) TTC.get(0);
+				float minTTC=(float) TTC.get(0);
+				
+				//System.out.println(sumTTC);
+				//System.out.println(minTTC);
+				//System.out.println(TTC.size());
+				
+				for (int a=1;a<=TTC.size()-1;a++)
+				{
+					sumTTC=sumTTC+(float)TTC.get(a);
+					
+					if (minTTC>(float)TTC.get(a))
+					{
+						minTTC=(float)TTC.get(a);
+					}
+					
+				}
+				
+				avgTTC=sumTTC/TTC.size();
+				trialLogger.setAvgTTC(avgTTC);
+				trialLogger.setMinTTC(minTTC);
+				
+				//if(minTTC<=0.0715)
+					//trialLogger.setNoCollisions(1);
+				
+				//System.out.println(avgTTC);
+				//System.out.println(minTTC);
 				
 				reactionLogger.add(reactionGroupID, -1, reactionTime, startTime, relativeStartTime, comment);
 
@@ -213,6 +326,8 @@ public class BrakeReactionTimer extends ReactionTimer
 				
 				timerIsActive = false;
 			}
+			//else
+				//System.out.println("MISSED2");
 		}
 		
 		if(soundTimerIsActive)
@@ -291,5 +406,57 @@ public class BrakeReactionTimer extends ReactionTimer
 		return null;
 	}
 
+	private Vector3f getVehicleLoc(String obstacleName)
+	{
+		//System.out.println(obstacleName+ "hi");
+		for(TrafficObject trafficObject : PhysicalTraffic.getTrafficObjectList())
+		{
+			if(trafficObject.getName().equals(obstacleName))
+			{
+				//System.out.println("Found");
+				//System.out.println(trafficObject.getPosition());
+				return trafficObject.getPosition();
+			}
+		}
+		
+/*		Spatial object = Util.findNode(sim.getRootNode(), obstacleName);
+		System.out.println(object.getLocalTranslation());
+		return object.getLocalTranslation();*/
+		return null;
+	}
+	
+	private Vector3f getObstacleLoc(String obstacleName)
+	{
+		//System.out.println(obstacleName+ "hi");
+		/*for(TrafficObject trafficObject : PhysicalTraffic.getTrafficObjectList())
+		{
+			if(trafficObject.getName().equals(obstacleName))
+			{
+				System.out.println("Found");
+				System.out.println(trafficObject.getPosition());
+				return trafficObject.getPosition();
+			}
+		}*/
+		
+		Spatial object = Util.findNode(sim.getRootNode(), obstacleName);
+		//System.out.println(object.getLocalTranslation());
+		return object.getLocalTranslation();
+//		return null;
+	}
+	
+	
+	private Float getTTC(Vector3f obstaclePos, float speed)
+	{
+		//float distanceToObstacle = obstaclePos.distance(sim.getCar().getPosition());
+		
+		//float lateralDistance = sim.getCar().getLateralDistance(obstaclePos);
+		float forwardDistance = (sim.getCar().getForwardDistance(obstaclePos))/1000;
+		
+		float TTC = forwardDistance/((sim.getCar().getCurrentSpeedKmh()-speed)/3600);
+		
+		
+		
+		return TTC;
+	}
 }
 

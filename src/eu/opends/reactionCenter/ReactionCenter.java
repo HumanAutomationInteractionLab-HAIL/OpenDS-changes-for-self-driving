@@ -60,9 +60,9 @@ public class ReactionCenter
 			isRunning = true;
 			
 			System.err.println("Start");
-			Simulator.getDrivingTaskLogger().reportText("trial;vpn;age;gender;task;task_detail;condition_num;" +
-					"condition_string;track;accuracy;additional_false_r;RT_brake1;RT_brake2;RT_brake3;RT_brake4;" +
-					"RT_change1;RT_change2;RT_change3;RT_change4");
+			Simulator.getDrivingTaskLogger().reportText("Start Time \t Task \t Condition \t Accuracy \t" +
+					"Lateral Acceleration \t Average TTC \t Minimum TTC \t # of Collisions \t" +
+					"RT_brake1 \t RT_brake2 \t RT_brake3 \t RT_brake4 \t RT_change1 \t RT_change2 \t RT_change3 \t RT_change4");
 		}
 	}
 
@@ -111,7 +111,7 @@ public class ReactionCenter
 	public void setupLaneChangeReactionTimer(String timerID, String reactionGroupID, String startLane, 
 			String targetLane, float minSteeringAngle, float taskCompletionAfterTime, 
 			float taskCompletionAfterDistance, boolean allowBrake, float holdLaneFor, String failSound, 
-			String successSound, String comment)
+			String successSound, String leadVehicle, String leadObstacle, String comment)
 	{
 		if(isRunning)
 		{
@@ -144,7 +144,7 @@ public class ReactionCenter
 			// setup reaction timer
 			((LaneChangeReactionTimer)reactionTimer).setup(reactionGroupID, startLane, targetLane, minSteeringAngle,
 					taskCompletionAfterTime, taskCompletionAfterDistance, allowBrake, holdLaneFor, failSound, 
-					successSound, comment);
+					successSound, leadVehicle, leadObstacle, comment);
 		}
 		else
 			System.err.println("Make sure ReactionCenter has been started");
@@ -154,7 +154,7 @@ public class ReactionCenter
 	public void setupBrakeReactionTimer(String timerID, String reactionGroupID,	float startSpeed, 
 			float targetSpeed, boolean mustPressBrakePedal,	float taskCompletionAfterTime, 
 			float taskCompletionAfterDistance, boolean allowLaneChange, float holdSpeedFor, 
-			String failSound, String successSound, String comment) 
+			String failSound, String successSound, String leadVehicle, String leadObstacle, String comment) 
 	{
 		if(isRunning)
 		{
@@ -187,7 +187,7 @@ public class ReactionCenter
 			// setup reaction timer
 			((BrakeReactionTimer)reactionTimer).setup(reactionGroupID, startSpeed, targetSpeed, 
 					mustPressBrakePedal, taskCompletionAfterTime, taskCompletionAfterDistance,
-					allowLaneChange, holdSpeedFor, failSound, successSound, comment);
+					allowLaneChange, holdSpeedFor, failSound, successSound, leadVehicle, leadObstacle, comment);
 		}
 		else
 			System.err.println("Make sure ReactionCenter has been started");

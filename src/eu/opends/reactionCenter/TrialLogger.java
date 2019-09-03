@@ -27,6 +27,7 @@ import eu.opends.main.Simulator;
  */
 public class TrialLogger 
 {
+	private long startTime;
 	private int trialNumber = -1;
 	private String vpn_age_gender_track = "-1;-1;-1;-1";
 	private String vpn = "-1";
@@ -40,6 +41,10 @@ public class TrialLogger
 	
 	private String reaction = "-1";
 	private String additional_reaction = "0";
+	private String latAcl = "";
+	private String avgTTC = "";
+	private String minTTC = "";
+	private String noCollisions = "0";
 	private String brakeRT_noGas = "";
 	private String brakeRT_StartBrake = "";
 	private String brakeRT_80pcBrake = "";
@@ -111,14 +116,18 @@ public class TrialLogger
 
 	
 	public void writeLog()
-	{		
-		Simulator.getDrivingTaskLogger().reportText(trialNumber + ";" + vpn + ";" + age + ";" + gender + ";" + 
-				task + ";" + task_detail + ";" + condition_num + ";" + condition_string + ";" + track + ";" + 
-				reaction + ";" + additional_reaction + ";" + brakeRT_noGas + ";" + brakeRT_StartBrake + ";" + 
-				brakeRT_80pcBrake +	";" + brakeRT_success + ";" + laneChangeRT_2angle + ";" + 
-				laneChangeRT_3angle + ";" + laneChangeRT_enterLane + ";" + laneChangeRT_success);
+	{	
+		// This is what writes out the headlines for the drivingTaskLog file
+		Simulator.getDrivingTaskLogger().reportText(startTime +"\t" + task + "\t" + condition_string + "\t" + 
+				reaction + "\t" + latAcl + "\t" + avgTTC + "\t" + minTTC + "\t" + noCollisions + "\t" + 
+				brakeRT_noGas + "\t" + brakeRT_StartBrake + "\t" + brakeRT_80pcBrake +	"\t" + brakeRT_success + "\t" + 
+				laneChangeRT_2angle + "\t" +	laneChangeRT_3angle + "\t" + laneChangeRT_enterLane + "\t" + laneChangeRT_success);
 	}
 
+	public void setStartTime(long time) 
+	{
+		this.startTime = time;
+	}
 	
 	/**
 	 * @param task the task to set
@@ -161,7 +170,37 @@ public class TrialLogger
 		additional_reaction = additionalReaction+"";
 	}
 
+	public void setlatAcl(Float latAcl) 
+	{
+		this.latAcl = latAcl+"";
+	}
+	
+	/**
+	 * @param average TTC
+	 */
+	public void setAvgTTC(Float avgTTC) 
+	{
+		this.avgTTC = avgTTC+"";
+	}
 
+
+	/**
+	 * @param minimum TTC
+	 */
+	public void setMinTTC(Float minTTC) 
+	{
+		this.minTTC = minTTC+"";
+	}
+	
+	/**
+	 * @param minimum TTC
+	 */
+	public void setNoCollisions(int noCollisions) 
+	{
+		this.noCollisions = noCollisions+"";
+	}
+	
+	
 	/**
 	 * @param brakeRTNoGas the brakeRT_noGas to set
 	 */

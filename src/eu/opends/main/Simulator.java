@@ -34,10 +34,12 @@ import org.apache.log4j.PropertyConfigurator;
 
 import eu.opends.profiler.BasicProfilerState;
 import com.jme3.app.StatsAppState;
-import com.jme3.app.state.VideoRecorderAppState;
+//import com.jme3.app.state.VideoRecorderAppState;
 import com.jme3.input.Joystick;
+import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.niftygui.NiftyJmeDisplay;
+import com.jme3.scene.Spatial;
 import com.jme3.scene.Spatial.CullHint;
 import com.sun.javafx.application.PlatformImpl;
 
@@ -51,7 +53,6 @@ import eu.opends.camera.SimulatorCam;
 import eu.opends.cameraFlight.CameraFlight;
 import eu.opends.cameraFlight.NotEnoughWaypointsException;
 import eu.opends.canbus.CANClient;
-import eu.opends.car.Car;
 import eu.opends.car.ResetPosition;
 import eu.opends.car.SteeringCar;
 import eu.opends.drivingTask.DrivingTask;
@@ -80,7 +81,6 @@ import eu.opends.traffic.PhysicalTraffic;
 import eu.opends.trigger.TriggerCenter;
 import eu.opends.visualization.LightningClient;
 import eu.opends.visualization.MoviePlayer;
-import eu.opends.traffic.TrafficCar;
 
 /**
  * 
@@ -88,6 +88,9 @@ import eu.opends.traffic.TrafficCar;
  */
 public class Simulator extends SimulationBasics
 {
+	
+	public native static String GetPropertyValue(String aName) throws Exception;
+	
 	private final static Logger logger = Logger.getLogger(Simulator.class);
 
     private Nifty nifty;
@@ -102,11 +105,6 @@ public class Simulator extends SimulationBasics
 	}
 	
 	private SteeringCar car;
-	public TrafficCar tcar1,tcar2,tcar3,tcar4,tcar5,tcar6;
-	public TrafficCar getTcar1()
-	{
-		return tcar1;
-	}
     public SteeringCar getCar()
     {
     	return car;
@@ -358,12 +356,6 @@ public class Simulator extends SimulationBasics
 		// initialize physical vehicles
 		physicalTraffic = new PhysicalTraffic(this);
 		//physicalTraffic.start(); //TODO
-		tcar1 = (TrafficCar)(getPhysicalTraffic().getTrafficObject("car1"));
-		/*tcar2 = (TrafficCar)(getPhysicalTraffic().getTrafficObject("car2"));
-		tcar3 = (TrafficCar)(getPhysicalTraffic().getTrafficObject("car3"));
-		tcar4 = (TrafficCar)(getPhysicalTraffic().getTrafficObject("car4"));
-		tcar5 = (TrafficCar)(getPhysicalTraffic().getTrafficObject("car5"));
-		tcar6 = (TrafficCar)(getPhysicalTraffic().getTrafficObject("car6"));*/
 		
 		// open TCP connection to KAPcom (knowledge component) [affects the driver name, see below]
 		if(settingsLoader.getSetting(Setting.KnowledgeManager_enableConnection, SimulationDefaults.KnowledgeManager_enableConnection))
@@ -511,9 +503,7 @@ public class Simulator extends SimulationBasics
 	 */
 	public void initializeDataWriter(int trackNumber) 
 	{
-		//dataWriter = new DataWriter(outputFolder, car, tcar1, tcar2, tcar3, tcar4, tcar5, tcar6, SimulationDefaults.driverName,
-				//SimulationDefaults.drivingTaskFileName, trackNumber);
-		dataWriter = new DataWriter(outputFolder, car, tcar1, SimulationDefaults.driverName,
+		dataWriter = new DataWriter(outputFolder, car, SimulationDefaults.driverName, 
 				SimulationDefaults.drivingTaskFileName, trackNumber);
 	}
 	
@@ -549,7 +539,7 @@ public class Simulator extends SimulationBasics
 				multiDriverClient.update();
 			
 			if(!isPause())
-				car.update(tpf);
+				car.update(tpf, PhysicalTraffic.getTrafficObjectList());
 			
 			// TODO start thread in init-method to update traffic
 			physicalTraffic.update(tpf); 
@@ -701,6 +691,10 @@ public class Simulator extends SimulationBasics
 		super.destroy();
 		logger.info("finished destroy()");
 		
+		if (physicalTraffic.getMultiThreadingEnable()){
+			physicalTraffic.executorShutdown();
+		}
+		
 		PlatformImpl.exit();
 		//System.exit(0);
     }
@@ -708,6 +702,55 @@ public class Simulator extends SimulationBasics
 
     public static void main(String[] args) 
     {    
+    	
+    	/*// License library, list of codes returned from the function
+    	String licenseCode0 = "ERROR_SUCCESS";
+		String licenseCode234 = "ERROR_MODE_DATA";
+		String licenseCode13 = "ERROR_INVALID_DATA";
+		String licenseCode5 = "ERROR_ACCESS_DENIED";
+		
+		
+		String daysLeft;
+		// License library, list of properties to extract
+		String getTrialName = "TrialName";
+		
+		// License implementation might be extended to include following features
+		String getLicReqContact = "LicReqContact";
+		String getbuildDate = "BuildDate";
+		String getBuyUrl = "BuyUrl";
+		String getTrialExtendContract = "TrialExtendContract";
+		String getLicenseKey = "LicenseKey";
+		String getTrialLeft = "TrialLeft";
+		String getQuantity = "Quantity";
+		String getTrialMU = "TrialMU";
+		String getCompId = "CompId";
+		
+		
+		
+		// proceed with the loop if license is OK, other ways skip the loop
+		try {
+	          String value = GetPropertyValue(getTrialName); 
+	          if ( value == licenseCode0 ){
+	        	  System.out.println(licenseCode0);
+	          }
+	          else if ( value == licenseCode5){
+	        	  System.out.println(licenseCode5);
+	        	  System.exit(0);
+	          }
+	          else if ( value == licenseCode234 ){
+	        	  System.out.println(licenseCode234);
+	        	  System.exit(0);
+	          }
+	          else if ( value == licenseCode13 ){
+	        	  System.out.println(licenseCode13);
+	        	  System.exit(0);
+	          }
+	     } catch (Exception e) {
+	         e.printStackTrace();
+	         logger.fatal("Could not initialize the license", e);
+	     }
+	    */
+    	
     	try
     	{
     		// copy native files of force feedback joystick driver
@@ -809,19 +852,4 @@ public class Simulator extends SimulationBasics
 			e.printStackTrace();
 		}
 	}
-	/*public Car getTcar2() {
-		return tcar2;
-	}
-	public Car getTcar3() {
-		return tcar3;
-	}
-	public Car getTcar4() {
-		return tcar4;
-	}
-	public Car getTcar5() {
-		return tcar5;
-	}
-	public Car getTcar6() {
-		return tcar6;
-	}*/
 }

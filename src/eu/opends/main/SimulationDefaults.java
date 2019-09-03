@@ -110,5 +110,13 @@ public class SimulationDefaults
 	public static Float cruiseControl_emergencyBrakeDistance = 20f;
 	public static Boolean cruiseControl_suppressDeactivationByBrake = false;
 	public static Float cruiseControl_initialSpeed = 0f;
+	
+	public static Boolean USMeasurementSystem = false;
 
+	// multiThreding approach for traffic update loop. By default it takes number of available logical Cores + 1 
+	public static boolean MultiThreading_enableThreads = false;
+	public static int multiThreading_numberOfThreads = Runtime.getRuntime().availableProcessors()+1;
+	
+	// integration of high polygon model. By default it is disabled
+	public static Boolean HighPolygon_carModel = false;
 }

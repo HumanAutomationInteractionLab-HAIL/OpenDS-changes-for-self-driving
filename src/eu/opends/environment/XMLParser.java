@@ -1,6 +1,6 @@
 /*
 *  This file is part of OpenDS (Open Source Driving Simulator).
-*  Copyright (C) 2015 Rafael Math
+*  Copyright (C) 2016 Rafael Math
 *
 *  OpenDS is free software: you can redistribute it and/or modify
 *  it under the terms of the GNU General Public License as published by
@@ -180,8 +180,7 @@ public class XMLParser
 						if(actionID.equals("steering"))
 						{
 							float value = Float.parseFloat(valueString);
-							//System.out.println("Steering: " + value);
-							
+							System.out.println("Steering: " + value);
 							
 							// for Sim-TD Smart
 							canClient.setSteeringAngle(-value);
@@ -208,8 +207,8 @@ public class XMLParser
 						else if(actionID.equals("acceleration"))	
 						{
 							float value = Float.parseFloat(valueString);
-							//System.out.println("Gas: " + value);
-							//value = value*6; changing this for autonomous car
+							System.out.println("Gas: " + value);
+							value = value*6;
 							if(value <= 0)
 							{
 								car.setAcceleratorPedalIntensity(0);
@@ -217,9 +216,6 @@ public class XMLParser
 							}
 							else
 							{
-								//the equation below takes acceleration input
-								//the canclient input for autonomous car is the pedal intensity itself
-								//-value because the input file has abs(pedal intensity)
 								car.setAcceleratorPedalIntensity(Math.max(-value,-1.0f));
 								sim.getSteeringTask().getPrimaryTask().reportGreenLight();
 							}
@@ -243,7 +239,7 @@ public class XMLParser
 						else if(actionID.equals("KL54_RM_State"))	
 						{
 							int value = Integer.parseInt(valueString);
-							//System.out.println("Brake: " + value);
+							System.out.println("Brake: " + value);
 							if(value == 0)
 								//car.setGasPedalIntensity(0);
 								car.setBrakePedalIntensity(0);
@@ -256,7 +252,7 @@ public class XMLParser
 						else if(actionID.equals("brake"))	
 						{
 							float value = Float.parseFloat(valueString);
-							//System.out.println("Brake: " + value);
+							System.out.println("Brake: " + value);
 							if(value <= 0)
 							{
 								//car.setGasPedalIntensity(0);
@@ -352,8 +348,8 @@ public class XMLParser
 						// channel3 input
 						else if(actionID.equals("channel3"))	
 						{
-							float value = Float.parseFloat(valueString);
-							float percentage = voltToPercentage(value, 0.2f, 3.7f);
+							//float value = Float.parseFloat(valueString);
+							//float percentage = voltToPercentage(value, 0.2f, 3.7f);
 							//System.out.println("channel3: " + percentage);
 						}
 						

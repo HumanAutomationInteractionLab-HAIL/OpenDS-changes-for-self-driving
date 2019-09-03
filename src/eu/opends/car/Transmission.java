@@ -29,6 +29,7 @@ import eu.opends.tools.PanelCenter;
 /**
  * 
  * @author Rafael Math
+ * This class corresponds to an older transmission without clutch
  */
 public class Transmission 
 {
@@ -209,7 +210,6 @@ public class Transmission
 			powerPercentage = powerPercentage * (limitedSpeed - currentVehicleSpeed);
 		
 		// accelerate
-		System.out.println("Input to car control: " + pAccel * powerPercentage * Math.signum(gear));
 		car.getCarControl().accelerate(pAccel * powerPercentage * Math.signum(gear));
 		
 		// output texts

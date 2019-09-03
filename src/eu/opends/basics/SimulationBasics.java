@@ -263,6 +263,15 @@ public class SimulationBasics extends SimpleApplication
     	
     	// init physics
         bulletAppState = new BulletAppState();
+        /**Now the physics update happens in parallel to render(), 
+         * that is, after the user's changes in the update() call have been applied. 
+         * During update() the physics update loop pauses. 
+         * This way the loop logic is still maintained: the user can set and change values in physics and scenegraph 
+         * objects before render() and physicsUpdate() are called in parallel. This allows you to use physics 
+         * methods in update() as if it was single-threaded.
+         * 
+         */
+        bulletAppState.setThreadingType(BulletAppState.ThreadingType.PARALLEL);
         stateManager.attach(bulletAppState);
 		
         // register loader for *.properties-files
