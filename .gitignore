@@ -1,0 +1,4 @@
+bin/
+analyzerData/
+.DS_Store
+joystickDump.txt
