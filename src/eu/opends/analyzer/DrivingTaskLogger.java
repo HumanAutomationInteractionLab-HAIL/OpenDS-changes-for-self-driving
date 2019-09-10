@@ -93,6 +93,18 @@ public class DrivingTaskLogger
 		}
 	}
 	
+	public void reportText(String string, long millisecs) 
+	{
+		// write data to file
+		try {
+			output.write(millisecs + "\t" + string + newLine);
+			output.flush();
+			
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
 	
 	/**
 	 * Adds a string to the output file.

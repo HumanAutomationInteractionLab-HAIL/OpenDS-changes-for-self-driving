@@ -58,7 +58,7 @@ public class FollowBox
 	private boolean waitForNextUpdate = true;
 
 	
-	public FollowBox(Simulator sim, final TrafficObject trafficObject, FollowBoxSettings settings)
+	public FollowBox(Simulator sim, final TrafficObject trafficObject, FollowBoxSettings settings, boolean setToStartWayPoint)
 	{
 		this.sim = sim;
 		this.trafficObject = trafficObject;
@@ -113,7 +113,8 @@ public class FollowBox
 	    
 	    // get start way point
 	    int startWayPointIndex = settings.getStartWayPointIndex();
-	    setToWayPoint(startWayPointIndex);	    
+	    if(setToStartWayPoint)
+	    	setToWayPoint(startWayPointIndex);	    
         
         // set start speed
 	    float initialSpeed = waypointList.get(startWayPointIndex).getSpeed();
@@ -186,6 +187,7 @@ public class FollowBox
 
 	private void checkIfWayPointReached() 
 	{
+		
 		int currentWayPointIndex = motionControl.getCurrentWayPoint() % waypointList.size();
 		if(currentWayPointIndex != previousWayPointIndex)
 		{

@@ -344,20 +344,14 @@ public class TrafficLightInternalProgram extends Thread
 				// that are required to switch the selected traffic light to green and 
 				// wait a second
 				requestIntersectionRed(trafficLight);
-				if (intersectionID.equals("intersection4"))
-					wait(19);
-				if (intersectionID.equals("intersection8"))
-					wait(9);
-				if (intersectionID.equals("intersection1"))
-					wait(9);
 				wait(1);
 				
 				// if all required traffic lights are red
 				if(isIntersectionRed(trafficLight))
 				{
 					// switch selected traffic light to YELLOWRED and wait 1 second
-					//trafficLight.setState(TrafficLightState.YELLOWRED);
-					//wait(1);
+					trafficLight.setState(TrafficLightState.YELLOWRED);
+					wait(1);
 					
 					// switch selected traffic light to GREEN and wait 3 seconds
 					trafficLight.setState(TrafficLightState.GREEN);

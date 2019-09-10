@@ -21,6 +21,9 @@ package eu.opends.basics;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.jme3.animation.AnimChannel;
+import com.jme3.animation.AnimControl;
+import com.jme3.animation.AnimEventListener;
 import com.jme3.bullet.PhysicsSpace;
 import com.jme3.bullet.collision.shapes.CollisionShape;
 import com.jme3.bullet.control.RigidBodyControl;
@@ -30,13 +33,14 @@ import com.jme3.scene.Spatial;
 import com.jme3.scene.Spatial.CullHint;
 
 import eu.opends.main.Simulator;
+import eu.opends.tools.Util;
 
 /**
  * This class is used to further process the elements on the map.
  * 
  * @author Rafael Math
  */
-public class InternalMapProcessing
+public class InternalMapProcessing implements AnimEventListener
 {
 	private SimulationBasics sim;
 	private Node sceneNode;
@@ -62,6 +66,36 @@ public class InternalMapProcessing
 			generateDrivingTaskTriggers();
 			addTriggersToTriggerNode();
 		}
+		/*
+		String modelName = "coneLamp1";
+		try {
+			
+			// get "visual" or "physical" spatial
+			// search in all sub-nodes of root node (scene node, trigger node, ...)
+			
+			Node object = Util.findNode(sim.getSceneNode(), modelName);
+			Node scnd = (Node) object.getChild("Models/ConeLamp/ConeLamp-scene_node");
+			Node armature = (Node) scnd.getChild("Armature");
+			Node group = (Node) armature.getChild("Group1.001");
+			Node entity = (Node) group.getChild("Group1.001-entity");
+			Node mesh = (Node) entity.getChild("Group1.001-ogremesh");
+			AnimControl control = mesh.getControl(AnimControl.class);
+			control.addListener(this);
+			AnimChannel channel = control.createChannel();
+			for (String anim : control.getAnimationNames()) { System.out.println(anim); }
+			channel.setAnim("Cown Lamp");
+			try {
+				//control = (RigidBodyControl) object.getControl(0);
+			}
+			catch(IndexOutOfBoundsException e2)
+			{
+				System.err.println("Could not manipulate physics of '" + modelName + "'!");
+			}
+				
+		} catch (Exception e){
+			e.printStackTrace();
+			System.err.println("Could not manipulate object '" + modelName + "'! Maybe it does not exist.");
+		}*/
 	}
 
 
@@ -191,5 +225,19 @@ public class InternalMapProcessing
 			// add trigger to trigger node
 			sim.getTriggerNode().attachChild(object);
 		}
+	}
+
+
+	@Override
+	public void onAnimChange(AnimControl arg0, AnimChannel arg1, String arg2) {
+		// TODO Auto-generated method stub
+		
+	}
+
+
+	@Override
+	public void onAnimCycleDone(AnimControl arg0, AnimChannel arg1, String arg2) {
+		// TODO Auto-generated method stub
+		
 	}	
 }

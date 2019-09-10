@@ -19,9 +19,11 @@
 package eu.opends.input;
 
 import com.jme3.input.controls.AnalogListener;
+import com.jme3.math.FastMath;
 
 import eu.opends.drivingTask.settings.SettingsLoader.Setting;
 import eu.opends.main.Simulator;
+import eu.opends.car.SteeringCar;
 
 /**
  * 
@@ -35,11 +37,14 @@ public class SimulatorAnalogListener implements AnalogListener
 	private float acceleratorSensitivityFactor;
 	private float brakeSensitivityFactor;
 	private float clutchSensitivityFactor;
+	private Float previousSteeringValue = null;
+	private SteeringCar car;
 	
 	
 	public SimulatorAnalogListener(Simulator simulator) 
 	{
 		this.simulator = simulator;
+		this.car = simulator.getCar();
 		simulator.getInputManager().setAxisDeadZone(0);
 		
 		steeringSensitivityFactor = Simulator.getSettingsLoader().getSetting(Setting.Joystick_steeringSensitivityFactor, 1.0f);
@@ -60,36 +65,39 @@ public class SimulatorAnalogListener implements AnalogListener
 		//simulator.getInputManager().getJoysticks()[0].rumble(0.0f);
 		
 		
-		if (binding.equals("SteeringWheelLeft")) 
+		if (binding.equals("SteeringWheelLeft"))// && !car.isAutoPilot()) 
 		{
-			float steeringValue =  (value*steeringSensitivityFactor)/tpf;
+			float steeringValue =  ((value*steeringSensitivityFactor)/tpf)/2.3f;
 			
 			//System.out.println("left: " + Math.round(steeringValue*100000)/1000f);
 
-			simulator.getSteeringTask().setSteeringIntensity(-2.6f*steeringValue);
+			simulator.getSteeringTask().setSteeringIntensity(-5.98f*steeringValue);
+		
+			// Also have to use this to turn the Autopilot off
+			if(previousSteeringValue != null && FastMath.abs(steeringValue - previousSteeringValue) > 0.000000001 && FastMath.abs(steeringValue) > 0.02f)
+				simulator.getCar().setAutoPilot(false);
+			//else if (previousSteeringValue != null && FastMath.abs(steeringValue - previousSteeringValue) > 0.000000001 && FastMath.abs(steeringValue) <= 0.01f)
+				//System.out.println("Steering Value: " + FastMath.abs(steeringValue));
+			previousSteeringValue = steeringValue;
 			
-			/*
-			if(Math.abs(steeringValue) <= 0.002f)
-				simulator.getCar().unsteer();
-			else*/
-				simulator.getCar().steer(steeringValue/2.3f);
-				//System.out.println("left: " + Math.round((steeringValue/2.3f)*100000)/1000f);
+			simulator.getCar().steer(steeringValue);
 		}
 		
-		else if (binding.equals("SteeringWheelRight")) 
+		else if (binding.equals("SteeringWheelRight"))// && !car.isAutoPilot()) 
 		{
-			float steeringValue = (-value*steeringSensitivityFactor)/tpf;
+			float steeringValue = ((-value*steeringSensitivityFactor)/tpf)/2.3f;
 			
 			//System.out.println("right: " + Math.round(steeringValue*100000)/1000f);
 
-			simulator.getSteeringTask().setSteeringIntensity(-2.6f*steeringValue);
+			simulator.getSteeringTask().setSteeringIntensity(-5.98f*steeringValue);
 			
-			/*
-			if(Math.abs(steeringValue) <= 0.002f)
-				simulator.getCar().unsteer();
-			else*/
-				simulator.getCar().steer(steeringValue/2.3f);
-				//System.out.println("right: " + Math.round((steeringValue/2.3f)*100000)/1000f);
+			if(previousSteeringValue != null && FastMath.abs(steeringValue - previousSteeringValue) > 0.000000001 && FastMath.abs(steeringValue) > 0.02f)
+				simulator.getCar().setAutoPilot(false);
+			else if (previousSteeringValue != null && FastMath.abs(steeringValue - previousSteeringValue) > 0.000000001 && FastMath.abs(steeringValue) <= 0.02f)
+				System.out.println("Steering Value: " + FastMath.abs(steeringValue));
+			previousSteeringValue = steeringValue;
+			
+			simulator.getCar().steer(steeringValue);
 		} 
 		
 		else if (binding.equals("AcceleratorUp") || binding.equals("AcceleratorDown") || binding.equals("CombinedPedalsAccelerator"))
@@ -98,6 +106,8 @@ public class SimulatorAnalogListener implements AnalogListener
 			
 			if(binding.equals("AcceleratorUp"))
 				accelerationValue = -0.5f + (0.5f*accelerationValue);
+/*			else if(binding.equals("AcceleratorUp") && car.isAcceleratingBack())
+				accelerationValue = accelerationValue - 0.5f;*/
 			else if(binding.equals("AcceleratorDown"))
 				accelerationValue = -0.5f - (0.5f*accelerationValue);
 			
@@ -108,18 +118,29 @@ public class SimulatorAnalogListener implements AnalogListener
 					
 			//System.out.println("acc: " + Math.round(accelerationValue*100000)/1000f);
 			
-			if(Math.abs(accelerationValue) >= 0.5f)
+			if(Math.abs(accelerationValue) >= 0.5f && !car.isAcceleratingBack())
 				simulator.getSteeringTask().getPrimaryTask().reportGreenLight();
+			else if(Math.abs(accelerationValue) >= 0.5f && car.isAcceleratingBack())
+				simulator.getSteeringTask().getPrimaryTask().reportRedLight();
 
-
+			if(Math.abs(accelerationValue) >= 0.05f)
+				simulator.getCar().setAutoPilot(false);
+			
 			if(Math.abs(accelerationValue) <= 0.05f)
 			{
 				//simulator.getCar().resetPedals();
 			}
-			else
+			else if(!car.isAcceleratingBack())
 				simulator.getCar().setAcceleratorPedalIntensity(accelerationValue);
+			else
+				simulator.getCar().setAcceleratorPedalIntensity(Math.abs(accelerationValue));
 			
-			simulator.getThreeVehiclePlatoonTask().reportAcceleratorIntensity(Math.abs(accelerationValue));
+			if(!car.isAcceleratingBack())
+				simulator.getThreeVehiclePlatoonTask().reportAcceleratorIntensity(Math.abs(accelerationValue));
+			else
+			{
+				simulator.getThreeVehiclePlatoonTask().reportAcceleratorIntensity(accelerationValue);
+			}
 		}
 		
 		else if (binding.equals("BrakeUp") || binding.equals("BrakeDown") || binding.equals("CombinedPedalsBrake"))
@@ -139,8 +160,10 @@ public class SimulatorAnalogListener implements AnalogListener
 			//System.out.println("brk: " + Math.round(brakeValue*100000)/1000f);
 			
 			if(Math.abs(brakeValue) >= 0.5f)
+			{
 				simulator.getSteeringTask().getPrimaryTask().reportRedLight();
-			
+				
+			}
 
 			if(Math.abs(brakeValue) <= 0.05f)
 			{
@@ -148,6 +171,7 @@ public class SimulatorAnalogListener implements AnalogListener
 			}
 			else
 			{
+				simulator.getCar().setAutoPilot(false);
 				simulator.getCar().disableCruiseControlByBrake();
 				simulator.getCar().setBrakePedalIntensity(brakeValue);
 				simulator.getThreeVehiclePlatoonTask().reportBrakeIntensity(brakeValue);

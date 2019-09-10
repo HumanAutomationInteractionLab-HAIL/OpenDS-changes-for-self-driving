@@ -20,6 +20,7 @@ package eu.opends.car;
 
 import java.util.Properties;
 
+import com.jme3.asset.AssetNotFoundException;
 import com.jme3.bounding.BoundingBox;
 import com.jme3.bullet.collision.shapes.CollisionShape;
 import com.jme3.bullet.collision.shapes.CompoundCollisionShape;
@@ -27,11 +28,13 @@ import com.jme3.bullet.control.VehicleControl;
 import com.jme3.bullet.objects.VehicleWheel;
 import com.jme3.bullet.util.CollisionShapeFactory;
 import com.jme3.material.Material;
+import com.jme3.material.RenderState.BlendMode;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.FastMath;
 import com.jme3.math.Matrix3f;
 import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
+import com.jme3.renderer.queue.RenderQueue.Bucket;
 import com.jme3.renderer.queue.RenderQueue.ShadowMode;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
@@ -39,8 +42,12 @@ import com.jme3.scene.Spatial;
 import com.jme3.scene.Spatial.CullHint;
 import com.jme3.scene.shape.Box;
 
+import eu.opends.main.SimulationDefaults;
 import eu.opends.main.Simulator;
 import eu.opends.tools.Util;
+
+import eu.opends.basics.SimulationBasics;
+import eu.opends.drivingTask.settings.SettingsLoader.Setting;
 
 /**
  * 
@@ -104,11 +111,24 @@ public class CarModelLoader
 	public Vector3f getRightLightDirection() {
 		return rightLightTarget.getWorldTranslation().subtract(getRightLightPosition());
 	}
-
 	
+	Boolean shadowModelActive;
+	Node highPolyChassis;
+	Node highPolySteering;
+	Node instrumnetCluster;
+	Node highPolyWheelFrontLeft;
+	Node highPolyWheelFrontRight;
+	Node highPolyWheelBackLeft;
+	Node highPolyWheelBackRight;
+	
+	
+	@SuppressWarnings("static-access")
 	public CarModelLoader(Simulator sim, Car car, String modelPath, float mass)
 	{	
         carNode = (Node)sim.getAssetManager().loadModel(modelPath);
+        
+        //activate shadowCarModel
+        shadowModelActive = SimulationBasics.getSettingsLoader().getSetting(Setting.HighPolygon_carModel, SimulationDefaults.HighPolygon_carModel);
         
         // set car's shadow mode
         carNode.setShadowMode(ShadowMode.Cast);        
@@ -119,7 +139,7 @@ public class CarModelLoader
 		Properties properties = (Properties) sim.getAssetManager().loadAsset(propertiesPath);
 		
 		// chassis properties
-		Vector3f chassisScale = new Vector3f(getVector3f(properties, "chassisScale",.01f));
+		Vector3f chassisScale = new Vector3f(getVector3f(properties, "chassisScale", 1));
 		
 		// ego camera properties
 		egoCamPos = new Vector3f(getVector3f(properties, "egoCamPos", 0)).mult(chassisScale);
@@ -207,6 +227,95 @@ public class CarModelLoader
         // create a collision shape for the largest spatial (= hull) of the chassis
         Spatial largestSpatial = findLargestSpatial(chassisNode);
         CollisionShape carHull;
+        
+        // make default car invisible
+        if (shadowModelActive){
+        	if (car instanceof SteeringCar){
+        		try {
+		        	Material mat = new Material(sim.getAssetManager(), "Materials/Unshaded.j3md");
+		 	       	mat.setColor("Color",  new ColorRGBA(1, 1, 1, 0.0f));
+		 	       	mat.getAdditionalRenderState().setBlendMode(BlendMode.Alpha);
+		 	       	largestSpatial.setQueueBucket(Bucket.Transparent);
+		 	       	chassis.setMaterial(mat);
+		 	     
+		 	       	Node frontRight = Util.findNode(carNode, "front_right");
+		 	       	Node frontLeft = Util.findNode(carNode, "front_left");
+		 	       	Node backRight = Util.findNode(carNode, "back_right");
+		 	       	Node backLeft = Util.findNode(carNode, "back_left");
+		 	       
+		 	       	frontRight.setMaterial(mat);
+		 	       	frontLeft.setMaterial(mat);
+		 	       	backRight.setMaterial(mat);
+		 	       	backLeft.setMaterial(mat);
+		   
+		 	       	chassis.updateModelBound(); 
+		 	       	
+		 	       	// add high polygon model on top
+		 	       	// chassis
+		 	       	String modelPathChassis = sim.getDrivingTask().getSceneLoader().getChassis();
+		    	   	highPolyChassis = (Node)sim.getAssetManager().loadModel(modelPathChassis);
+		    	   	
+		    	   		//properties file for chassis
+		    	   	String propertiesPathChassis = modelPathChassis.replace(".scene", ".properties");
+		    		Properties propertiesChassis = (Properties) sim.getAssetManager().loadAsset(propertiesPathChassis);
+		    	    Vector3f NewChassisScale = new Vector3f(getVector3f(propertiesChassis, "chassisScale", 1));
+		    	
+		       	        // scale chassis 
+		    	    highPolyChassis.scale(Float.parseFloat(propertiesChassis.getProperty("chassisScale.x")), Float.parseFloat(propertiesChassis.getProperty("chassisScale.y")), Float.parseFloat(propertiesChassis.getProperty("chassisScale.z")));
+		            	// rotate chassis
+		    	    highPolyChassis.rotate(Float.parseFloat(propertiesChassis.getProperty("chassisRotation.x"))*FastMath.DEG_TO_RAD, Float.parseFloat(propertiesChassis.getProperty("chassisRotation.y"))*FastMath.DEG_TO_RAD, Float.parseFloat(propertiesChassis.getProperty("chassisRotation.z"))*FastMath.DEG_TO_RAD);
+		            	// location chassis -- not required at the moment due to the design
+		    	    highPolyChassis.setLocalTranslation(Float.parseFloat(propertiesChassis.getProperty("chassisTranslation.x")), Float.parseFloat(propertiesChassis.getProperty("chassisTranslation.y")), Float.parseFloat(propertiesChassis.getProperty("chassisTranslation.z")));
+		            carNode.attachChild(highPolyChassis);
+		 	       	
+		            // steering wheel
+		            String modelPathSteeringWheel = sim.getDrivingTask().getSceneLoader().getSteeringWheel();           
+		       	    highPolySteering = (Node)sim.getAssetManager().loadModel(modelPathSteeringWheel);       	    
+		       	    highPolySteering.center();
+		       	    
+		       	    String propertiesPathSteeringWheel = modelPathSteeringWheel.replace(".scene", ".properties");
+		       	    Properties propertiesSteeringWheel = (Properties)sim.getAssetManager().loadAsset(propertiesPathSteeringWheel);
+		       	    Vector3f newSteeringWheelScale = new Vector3f(getVector3f(propertiesSteeringWheel, "steeringWheelScale", 1));
+		       	    	       	    
+		       	    	//scale steering wheel
+		       	    highPolySteering.scale(Float.parseFloat(propertiesSteeringWheel.getProperty("steeringWheelScale.x")), Float.parseFloat(propertiesSteeringWheel.getProperty("steeringWheelScale.y")), Float.parseFloat(propertiesSteeringWheel.getProperty("steeringWheelScale.z")));
+		       	    	// rotate steering wheel
+		       	    highPolySteering.rotate(Float.parseFloat(propertiesSteeringWheel.getProperty("steeringWheelRotation.x"))*FastMath.DEG_TO_RAD, Float.parseFloat(propertiesSteeringWheel.getProperty("steeringWheelRotation.y"))*FastMath.DEG_TO_RAD, Float.parseFloat(propertiesSteeringWheel.getProperty("steeringWheelRotation.z"))*FastMath.DEG_TO_RAD);
+		       	    	// location steering -- not required at the moment due to the design
+		       	    highPolySteering.setLocalTranslation(Float.parseFloat(propertiesSteeringWheel.getProperty("steeringWheelTranslation.x")), Float.parseFloat(propertiesSteeringWheel.getProperty("steeringWheelTranslation.y")), Float.parseFloat(propertiesSteeringWheel.getProperty("steeringWheelTranslation.z")));	
+		       	    
+	   			    carNode.attachChild(highPolySteering);
+	   			    
+	   			    // instrument cluster
+	   			    String modelPathInstrumentCluster = sim.getDrivingTask().getSceneLoader().getInstrumnetCluster();
+				    instrumnetCluster = (Node)sim.getAssetManager().loadModel(modelPathInstrumentCluster);
+				    
+				    String propertiesPathInstrumentCluster = modelPathInstrumentCluster.replace(".scene", ".properties");
+		       	    Properties propertiesInstrumentCluster = (Properties)sim.getAssetManager().loadAsset(propertiesPathInstrumentCluster);
+				    
+		       	    instrumnetCluster.scale(Float.parseFloat(propertiesInstrumentCluster.getProperty("InstrumentClusterScale.x")), Float.parseFloat(propertiesInstrumentCluster.getProperty("InstrumentClusterScale.y")), Float.parseFloat(propertiesInstrumentCluster.getProperty("InstrumentClusterScale.z")));
+		       	    // rotate steering wheel
+		       	    instrumnetCluster.rotate(Float.parseFloat(propertiesInstrumentCluster.getProperty("InstrumentClusterRotation.x"))*FastMath.DEG_TO_RAD, Float.parseFloat(propertiesInstrumentCluster.getProperty("InstrumentClusterRotation.y"))*FastMath.DEG_TO_RAD, Float.parseFloat(propertiesInstrumentCluster.getProperty("InstrumentClusterRotation.z"))*FastMath.DEG_TO_RAD);
+		       	    // location steering -- not required at the moment due to the design
+		       	    instrumnetCluster.setLocalTranslation(Float.parseFloat(propertiesInstrumentCluster.getProperty("InstrumentClusterTranslation.x")), Float.parseFloat(propertiesInstrumentCluster.getProperty("InstrumentClusterTranslation.y")), Float.parseFloat(propertiesInstrumentCluster.getProperty("InstrumentClusterTranslation.z")));	
+	 	   
+				    carNode.attachChild(instrumnetCluster);
+		            
+		            // wheels
+				    highPolyWheelFrontLeft = (Node)sim.getAssetManager().loadModel(sim.getDrivingTask().getSceneLoader().getWheelFrontLeft()); 
+	   			    highPolyWheelFrontRight = (Node)sim.getAssetManager().loadModel(sim.getDrivingTask().getSceneLoader().getWheelFrontRight());
+	   			    highPolyWheelBackLeft = (Node)sim.getAssetManager().loadModel(sim.getDrivingTask().getSceneLoader().getWheelBackLeft());
+	   			    highPolyWheelBackRight = (Node)sim.getAssetManager().loadModel(sim.getDrivingTask().getSceneLoader().getWheelBackRight());
+        		}
+        		catch (AssetNotFoundException e){
+        			e.printStackTrace();
+        		}
+			    
+        	}
+        }
+        
+        
+        
         if(properties.getProperty("useBoxCollisionShape") != null &&
         		Boolean.parseBoolean(properties.getProperty("useBoxCollisionShape")) == true)
         	carHull = CollisionShapeFactory.createBoxShape(largestSpatial);
@@ -290,6 +399,98 @@ public class CarModelLoader
                 wheelDirection, wheelAxle, suspensionLenght, wheelRadius, false);
         wheel_bl.setFrictionSlip(frictionSlip); // apply friction slip (likelihood of breakaway)
 
+        if (car instanceof SteeringCar){
+        	if (shadowModelActive){
+        		try {
+	        		// front right wheel
+	            	Node node_wheel_fr = Util.findNode(carNode, "front_right");
+	    	        node_wheel_fr.attachChild(highPolyWheelFrontRight);
+	    	        String modelPathWheelFR = sim.getDrivingTask().getSceneLoader().getWheelFrontRight();           
+		       	    String propertiesPathWheelFR = modelPathWheelFR.replace(".scene", ".properties");
+		       	    Properties propertiesWheelFR = (Properties)sim.getAssetManager().loadAsset(propertiesPathWheelFR);
+		       	    	       	    	       	    
+		       	    highPolyWheelFrontRight.scale(Float.parseFloat(propertiesWheelFR.getProperty("WheelFRScale.x")), Float.parseFloat(propertiesWheelFR.getProperty("WheelFRScale.y")), Float.parseFloat(propertiesWheelFR.getProperty("WheelFRScale.z")));
+		       	    highPolyWheelFrontRight.rotate(Float.parseFloat(propertiesWheelFR.getProperty("WheelFRRotation.x"))*FastMath.DEG_TO_RAD, Float.parseFloat(propertiesWheelFR.getProperty("WheelFRRotation.y"))*FastMath.DEG_TO_RAD, Float.parseFloat(propertiesWheelFR.getProperty("WheelFRRotation.z"))*FastMath.DEG_TO_RAD);      	    
+		       	    
+		       	    System.out.println("Container = " + Util.printTree(highPolyWheelFrontRight));
+		        	Geometry geom_wheel_fr_v2 = Util.findGeom(highPolyWheelFrontRight, "wheels-BR");
+		        	geom_wheel_fr_v2.center();
+		 	        box = (BoundingBox) geom_wheel_fr_v2.getModelBound();
+		 	        float wheelRadius_v3 = 16.9f * box.getYExtent();  
+		 	        VehicleWheel wheel_fr_v2 = carControl.addWheel(geom_wheel_fr_v2.getParent(), 
+		 	        		new Vector3f(rightWheelsPos, frontAxleHeight, frontAxlePos-0.14f),
+		 	                wheelDirection, wheelAxle, suspensionLenght, wheelRadius_v3, true);
+		 	        wheel_fr_v2.setFrictionSlip(frictionSlip);
+		 	      
+		 	        // front left wheel
+		 	        Node node_wheel_fl = Util.findNode(carNode, "front_left");
+		 	        node_wheel_fl.attachChild(highPolyWheelFrontLeft);
+		 	        String modelPathWheelFL = sim.getDrivingTask().getSceneLoader().getWheelFrontLeft();           
+		       	    
+		       	    String propertiesPathWheelFL = modelPathWheelFL.replace(".scene", ".properties");
+		       	    Properties propertiesWheelFL = (Properties)sim.getAssetManager().loadAsset(propertiesPathWheelFL);
+		       	    	       	    	       	    
+		       	    highPolyWheelFrontLeft.scale(Float.parseFloat(propertiesWheelFL.getProperty("WheelFLScale.x")), Float.parseFloat(propertiesWheelFL.getProperty("WheelFLScale.y")), Float.parseFloat(propertiesWheelFL.getProperty("WheelFLScale.z")));
+		       	    highPolyWheelFrontLeft.rotate(Float.parseFloat(propertiesWheelFL.getProperty("WheelFLRotation.x"))*FastMath.DEG_TO_RAD, Float.parseFloat(propertiesWheelFL.getProperty("WheelFLRotation.y"))*FastMath.DEG_TO_RAD, Float.parseFloat(propertiesWheelFL.getProperty("WheelFLRotation.z"))*FastMath.DEG_TO_RAD);      	    
+		
+		        	Geometry geom_wheel_fl_v2 = Util.findGeom(highPolyWheelFrontLeft, "wheels-LF");
+		        	geom_wheel_fl_v2.center();
+		 	        box = (BoundingBox) geom_wheel_fl_v2.getModelBound();
+		 	        float wheelRadius_v2 = 16.9f * box.getYExtent();  
+		 	        VehicleWheel wheel_fl_v2 = carControl.addWheel(geom_wheel_fl_v2.getParent(), 
+		 	        		new Vector3f(leftWheelsPos, frontAxleHeight, frontAxlePos-0.14f),
+		 	                wheelDirection, wheelAxle, suspensionLenght, wheelRadius_v2, true);
+		 	        wheel_fl_v2.setFrictionSlip(frictionSlip);
+		 	       
+		 	        // back right wheel
+		 	        Node node_wheel_br = Util.findNode(carNode, "back_right");
+			        node_wheel_br.attachChild(highPolyWheelBackRight);
+		 	        String modelPathWheelBR = sim.getDrivingTask().getSceneLoader().getWheelBackRight();           
+		       	    
+		       	    String propertiesPathWheelBR = modelPathWheelBR.replace(".scene", ".properties");
+		       	    Properties propertiesWheelBR = (Properties)sim.getAssetManager().loadAsset(propertiesPathWheelBR);
+		       	    	       	    	       	    
+		       	    highPolyWheelBackRight.scale(Float.parseFloat(propertiesWheelBR.getProperty("WheelBRScale.x")), Float.parseFloat(propertiesWheelBR.getProperty("WheelBRScale.y")), Float.parseFloat(propertiesWheelBR.getProperty("WheelBRScale.z")));
+		       	    highPolyWheelBackRight.rotate(Float.parseFloat(propertiesWheelBR.getProperty("WheelBRRotation.x"))*FastMath.DEG_TO_RAD, Float.parseFloat(propertiesWheelBR.getProperty("WheelBRRotation.y"))*FastMath.DEG_TO_RAD, Float.parseFloat(propertiesWheelBR.getProperty("WheelBRRotation.z"))*FastMath.DEG_TO_RAD);      	    
+		        	Geometry geom_wheel_br_v2 = Util.findGeom(highPolyWheelBackRight, "wheels-BR");
+		        	geom_wheel_br_v2.center();
+		 	        box = (BoundingBox) geom_wheel_br_v2.getModelBound();
+		 	        float wheelRadius_v5 = 16.9f * box.getYExtent();  
+		 	        VehicleWheel wheel_br_v2 = carControl.addWheel(geom_wheel_br_v2.getParent(), 
+		 	        		new Vector3f(rightWheelsPos, backAxleHeight, backAxlePos+0.06f),
+		 	                wheelDirection, wheelAxle, suspensionLenght, wheelRadius_v5, false);	        
+		 	        wheel_br_v2.setFrictionSlip(frictionSlip);
+		 	        
+		 	        //back left wheel
+		 	        Node node_wheel_bl = Util.findNode(carNode, "back_left");
+			        node_wheel_bl.attachChild(highPolyWheelBackLeft);
+		 	        String modelPathWheelBL = sim.getDrivingTask().getSceneLoader().getWheelBackLeft();           
+		       	    
+		       	    String propertiesPathWheelBL = modelPathWheelBL.replace(".scene", ".properties");
+		       	    Properties propertiesWheelBL = (Properties)sim.getAssetManager().loadAsset(propertiesPathWheelBL);
+		       	    	       	    	       	    
+		       	    highPolyWheelBackLeft.scale(Float.parseFloat(propertiesWheelBL.getProperty("WheelBLScale.x")), Float.parseFloat(propertiesWheelBL.getProperty("WheelBLScale.y")), Float.parseFloat(propertiesWheelBL.getProperty("WheelBLScale.z")));
+		       	    highPolyWheelBackLeft.rotate(Float.parseFloat(propertiesWheelBL.getProperty("WheelBLRotation.x"))*FastMath.DEG_TO_RAD, Float.parseFloat(propertiesWheelBL.getProperty("WheelBLRotation.y"))*FastMath.DEG_TO_RAD, Float.parseFloat(propertiesWheelBL.getProperty("WheelBLRotation.z"))*FastMath.DEG_TO_RAD);      	    
+		        	Geometry geom_wheel_bl_v2 = Util.findGeom(highPolyWheelBackLeft, "wheels-LF");
+		        	geom_wheel_bl_v2.center();
+		 	        box = (BoundingBox) geom_wheel_bl_v2.getModelBound();
+		 	        float wheelRadius_v4 = 16.9f * box.getYExtent();  
+		 	        VehicleWheel wheel_bl_v2 = carControl.addWheel(geom_wheel_bl_v2.getParent(), 
+		 	        		new Vector3f(leftWheelsPos, backAxleHeight, backAxlePos+0.06f),
+		 	                wheelDirection, wheelAxle, suspensionLenght, wheelRadius_v4, false); 
+		 	        wheel_bl_v2.setFrictionSlip(frictionSlip);
+        		}
+        		catch (NullPointerException e){
+        			e.printStackTrace();
+        		}
+	 	        
+        	}
+        }
+        
+        
+        
+        
+        
         
         if(properties.getProperty("thirdAxlePos") != null && properties.getProperty("thirdAxleHeight") != null)
         {

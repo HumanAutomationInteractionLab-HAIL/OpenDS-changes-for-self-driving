@@ -38,13 +38,15 @@ public class SetupLaneChangeReactionTimerTriggerAction extends TriggerAction
 	private float holdLaneFor;
 	private String failSound;
 	private String successSound;
+	private String leadVehicle;
+	private String leadObstacle;
 	private String comment;
 	
 	
 	public SetupLaneChangeReactionTimerTriggerAction(float delay, int maxRepeat, String timerID, String reactionGroupID, 
 			String startLane, String targetLane, float minSteeringAngle, float taskCompletionAfterTime, 
 			float taskCompletionAfterDistance, boolean allowBrake, float holdLaneFor, String failSound,
-			String successSound, String comment, Simulator sim) 
+			String successSound, String leadVehicle,String leadObstacle, String comment, Simulator sim) 
 	{
 		super(delay, maxRepeat);
 		
@@ -59,6 +61,8 @@ public class SetupLaneChangeReactionTimerTriggerAction extends TriggerAction
 		this.holdLaneFor = holdLaneFor;
 		this.failSound = failSound;
 		this.successSound = successSound;
+		this.leadVehicle = leadVehicle;
+		this.leadObstacle = leadObstacle;
 		this.comment = comment;
 		this.sim = sim;
 	}
@@ -71,7 +75,7 @@ public class SetupLaneChangeReactionTimerTriggerAction extends TriggerAction
 		{
 			sim.getReactionCenter().setupLaneChangeReactionTimer(timerID, reactionGroupID, startLane, targetLane,
 					minSteeringAngle, taskCompletionAfterTime, taskCompletionAfterDistance, allowBrake, holdLaneFor,
-					failSound, successSound, comment);
+					failSound, successSound, leadVehicle, leadObstacle, comment);
 			
 			updateCounter();
 		}

@@ -21,14 +21,23 @@ package eu.opends.reactionCenter;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.*; 
 
 import com.jme3.math.FastMath;
 import com.jme3.math.Vector3f;
+import com.jme3.scene.Geometry;
+import com.jme3.scene.Spatial;
 
 import eu.opends.audio.AudioCenter;
+import eu.opends.car.Car;
+import eu.opends.car.SteeringCar;
 import eu.opends.environment.LaneLimit;
 import eu.opends.jasperReport.ReactionLogger;
 import eu.opends.main.Simulator;
+import eu.opends.tools.PanelCenter;
+import eu.opends.tools.Util;
+import eu.opends.traffic.PhysicalTraffic;
+import eu.opends.traffic.TrafficObject;
 
 /**
  * 
@@ -36,10 +45,13 @@ import eu.opends.main.Simulator;
  */
 public class LaneChangeReactionTimer extends ReactionTimer
 {
+	// These are relevant numbers for measuring when the driver is safely out of the way
 	private float halfCarWidth = 0.75f;
+	private float halfConeWidth = 0.1f;
 	
 	private long timer;
 	private boolean timerSet = false;
+	private String startLane;
 	private String targetLane; 
 	private float minSteeringAngle;
 	private float steeringAngle;
@@ -51,6 +63,14 @@ public class LaneChangeReactionTimer extends ReactionTimer
 	private float holdLaneFor;
 	private String failSound;
 	private String successSound;
+	private Vector x_position;
+	private Vector times; 
+	private String leadVehicle;
+	private String leadObstacle;
+	private Vector TTC;
+	private float avgTTC;
+	private float minTTC;
+	private int noCollisions;
 	
 	private boolean soundTimerIsActive = false;
 	
@@ -64,13 +84,14 @@ public class LaneChangeReactionTimer extends ReactionTimer
 	
 	public void setup(String newReactionGroupID, String startLane, String targetLane, 
 			float minSteeringAngle, float taskCompletionTime, float taskCompletionDistance, 
-			boolean allowBrake, float holdLaneFor, String failSound, String successSound, String newComment)
+			boolean allowBrake, float holdLaneFor, String failSound, String successSound, String leadVehicle, String leadObstacle, String newComment)
 	{
 		// check pre-condition
 		if(startLane.equals(getCurrentLane()))
 		{
 			super.setup(newReactionGroupID, newComment);
 			
+			this.startLane = startLane;
 			this.targetLane = targetLane;
 			this.minSteeringAngle = minSteeringAngle;
 			this.startTime = System.currentTimeMillis();
@@ -82,6 +103,14 @@ public class LaneChangeReactionTimer extends ReactionTimer
 			this.failSound = failSound;
 			this.successSound = successSound;
 			this.steeringAngle = 0;
+			this.leadVehicle = leadVehicle;
+			this.leadObstacle = leadObstacle;
+			this.x_position = new Vector();
+			this.times = new Vector();
+			this.TTC= new Vector();
+			this.avgTTC = 0; 
+			this.minTTC = 0;
+			this.noCollisions = 0;
 			
 			if(targetLane.equals("1") || targetLane.equals("3"))
 				trialLogger.setTask(2);
@@ -90,6 +119,9 @@ public class LaneChangeReactionTimer extends ReactionTimer
 			
 			timerIsActive = true;
 			soundTimerIsActive = false;
+			
+			x_position.add(sim.getCar().getPosition().getX());
+			times.add(startTime);
 		}
 		else
 		{
@@ -123,44 +155,116 @@ public class LaneChangeReactionTimer extends ReactionTimer
 		
 		if(timerIsActive)
 		{
+			boolean startTurning = false;
 			long currentTime = System.currentTimeMillis();
+			//System.out.println(currentTime);
 			
 			float currentSteeringAngle = FastMath.abs(sim.getCar().getSteeringWheelState());
 			steeringAngle = Math.max(steeringAngle, currentSteeringAngle);
 			//System.err.println("steering angle: " + steeringAngle);
 			
+			// This will be relevant later for measuring lateral acceleration
+			x_position.add(sim.getCar().getPosition().getX());
+			//System.out.println((float)sim.getCar().getPosition().getX());
+			times.add(currentTime);
+			
+			// Continuously measure TTC until they safely get out of the way
+			if(leadVehicle.equals(""))
+				TTC.add(getTTC(getObstacleLoc(leadObstacle)));
+			else
+				TTC.add(getTTC(getVehicleLoc(leadVehicle)));
+			
 			if(isBraking())
 				trialLogger.setAdditional_reaction(1);
 			
 			if(currentSteeringAngle >= 0.004444f)
+			{
+				if(startTurning= false)
+				{
+					x_position.clear();
+					times.clear();
+				}
+				startTurning=true;
 				trialLogger.setLaneChangeRT_2angle((int)(currentTime - startTime));
-			
+			}
+				
 			if(currentSteeringAngle >= 0.006666f)
 				trialLogger.setLaneChangeRT_3angle((int)(currentTime - startTime));
 			
 			if(enteringTargetLane())
+			{
 				trialLogger.setLaneChangeRT_enterLane((int)(currentTime - startTime));
+			}
 			
 			if(timeExceeded() || distanceExceeded())
-			{
+			{	
+				trialLogger.setStartTime(startTime);
+				trialLogger.setlatAcl(getLatAccel(x_position,times));
+				float sumTTC=(float) TTC.get(0);
+				float minTTC=(float) TTC.get(0);
+				
+				// Go through the list of TTC values collected and find the smallest ones
+				for (int a=1;a<=TTC.size()-1;a++)
+				{
+					sumTTC=sumTTC+(float)TTC.get(a);
+					
+					if (minTTC>(float)TTC.get(a))
+					{
+						minTTC=(float)TTC.get(a);
+					}
+					
+				}				
+				
+				// This is to put the TTC values into the drivingTaskLog file
+				avgTTC=sumTTC/TTC.size();
+				trialLogger.setAvgTTC(avgTTC);
+				trialLogger.setMinTTC(minTTC);
+				
 				reportMissedReaction();
 			}
 			else if(isBrakingWithoutPermission())
 			{
 				reportFailureReaction();
 			}
-			else if(targetLane.equals(getCurrentLane()))
+			//else if(targetLane.equals(getCurrentLane()))
+			else if(leadVehicle.equals(""))
 			{
-				if(!timerSet)
+				// If they're out of danger of colliding with the lead obstacle, then stop recording the values
+				// This is specific for the Construction Zone Event
+				if(outOfDanger(halfConeWidth))
 				{
-					timer = System.currentTimeMillis();
-					timerSet = true;
+//					PanelCenter.getMessageBox().addMessage("signal", 3);
+					//System.out.println((float)sim.getCar().getPosition().getX());
+					if(!timerSet)
+					{
+						timer = System.currentTimeMillis();
+						timerSet = true;
+					}
+					
+					//System.err.println("-----------------------hold lane: " + (currentTime-timer));
+					if((currentTime-timer >= holdLaneFor) && (steeringAngle >= minSteeringAngle))
+					{
+						reportCorrectReaction();
+					}
 				}
-				
-				//System.err.println("-----------------------hold lane: " + (currentTime-timer));
-				if((currentTime-timer >= holdLaneFor) && (steeringAngle >= minSteeringAngle))
+			}
+			else if(leadObstacle.equals(""))
+			{
+				// This is specific for the Broken Vehicle Event
+				if(outOfDanger(halfCarWidth))
 				{
-					reportCorrectReaction();
+//					PanelCenter.getMessageBox().addMessage("signal", 3);
+					if(!timerSet)
+					{
+						timer = System.currentTimeMillis();
+						timerSet = true;
+					}
+					
+					//System.err.println("-----------------------hold lane: " + (currentTime-timer));
+					if((currentTime-timer >= holdLaneFor) && (steeringAngle >= minSteeringAngle))
+					{
+						reportCorrectReaction();
+					}
 				}
 			}
 			else
@@ -177,7 +281,28 @@ public class LaneChangeReactionTimer extends ReactionTimer
 			
 			if(correctReactionReported)
 			{
+				trialLogger.setStartTime(startTime);
+				trialLogger.setlatAcl(getLatAccel(x_position,times));
 				//System.err.println("CORRECT");
+				float sumTTC=(float) TTC.get(0);
+				float minTTC=(float) TTC.get(0);
+				
+				for (int a=1;a<=TTC.size()-1;a++)
+				{
+					sumTTC=sumTTC+(float)TTC.get(a);
+					
+					if (minTTC>(float)TTC.get(a))
+					{
+						minTTC=(float)TTC.get(a);
+					}
+					
+				}
+				
+				//trialLogger.setlatAcl(getLatAccel(x_position,times));
+				
+				avgTTC=sumTTC/TTC.size();
+				trialLogger.setAvgTTC(avgTTC);
+				trialLogger.setMinTTC(minTTC);
 				
 				trialLogger.setLaneChangeRT_success((int)reactionTime);
 				
@@ -196,7 +321,26 @@ public class LaneChangeReactionTimer extends ReactionTimer
 			}
 			else if(failureReactionReported)
 			{
+				trialLogger.setStartTime(startTime);
 				//System.err.println("FAILED");
+				
+				float sumTTC=(float) TTC.get(0);
+				float minTTC=(float) TTC.get(0);
+				
+				for (int a=1;a<=TTC.size()-1;a++)
+				{
+					sumTTC=sumTTC+(float)TTC.get(a);
+					
+					if (minTTC>(float)TTC.get(a))
+					{
+						minTTC=(float)TTC.get(a);
+					}
+					
+				}
+				
+				avgTTC=sumTTC/TTC.size();
+				trialLogger.setAvgTTC(avgTTC);
+				trialLogger.setMinTTC(minTTC);
 				
 				reactionLogger.add(reactionGroupID, -1, reactionTime, startTime, relativeStartTime, comment);
 
@@ -289,6 +433,24 @@ public class LaneChangeReactionTimer extends ReactionTimer
 		return null;
 	}
 	
+	// Custom function made to verify that the driver wouldn't collide with the obstacle anymore if they drove straight
+	private boolean outOfDanger(float halfObstacleWidth)
+	{
+		float currentX = sim.getCar().getPosition().getX();
+		Map<String, LaneLimit> laneList = Simulator.getDrivingTask().getScenarioLoader().getLaneList();
+		LaneLimit target = laneList.get(startLane);
+		float obstacle_xpos = ((target.getXMax()-target.getXMin())/2)+target.getXMin();
+		
+		float xMinExtended = obstacle_xpos + halfCarWidth + halfObstacleWidth;
+		float xMaxExtended = obstacle_xpos - halfCarWidth - halfObstacleWidth;
+		
+		/*System.out.println(currentX);
+		System.out.println(xMinExtended);
+		System.out.println(xMaxExtended);
+		System.out.println("-");*/
+		
+		return (xMinExtended < currentX || currentX < xMaxExtended);
+	}
 	
 	private boolean enteringTargetLane() 
 	{
@@ -302,5 +464,120 @@ public class LaneChangeReactionTimer extends ReactionTimer
 		
 		return (xMinExtended <= currentX && currentX <= xMaxExtended);
 	}
+
+	private Vector3f getVehicleLoc(String obstacleName)
+	{
+		//System.out.println(obstacleName+ "hi");
+		for(TrafficObject trafficObject : PhysicalTraffic.getTrafficObjectList())
+		{
+			if(trafficObject.getName().equals(obstacleName))
+			{
+				//System.out.println("Found");
+				//System.out.println(trafficObject.getPosition());
+				return trafficObject.getPosition();
+			}
+		}
+		
+/*		Spatial object = Util.findNode(sim.getRootNode(), obstacleName);
+		System.out.println(object.getLocalTranslation());
+		return object.getLocalTranslation();*/
+		return null;
+	}
 	
+	private Vector3f getObstacleLoc(String obstacleName)
+	{
+		//System.out.println(obstacleName+ "hi");
+		/*for(TrafficObject trafficObject : PhysicalTraffic.getTrafficObjectList())
+		{
+			if(trafficObject.getName().equals(obstacleName))
+			{
+				System.out.println("Found");
+				System.out.println(trafficObject.getPosition());
+				return trafficObject.getPosition();
+			}
+		}*/
+		
+		Spatial object = Util.findNode(sim.getRootNode(), obstacleName);
+		//System.out.println(object.getLocalTranslation());
+		return object.getLocalTranslation();
+//		return null;
+	}
+	
+	// Custom function to measure TTC
+	private Float getTTC(Vector3f obstaclePos)
+	{
+		//float distanceToObstacle = obstaclePos.distance(sim.getCar().getPosition());
+		
+		//float lateralDistance = sim.getCar().getLateralDistance(obstaclePos);
+		float forwardDistance = (sim.getCar().getForwardDistance(obstaclePos))/1000;
+		
+		float TTC = forwardDistance/((sim.getCar().getCurrentSpeedKmh())/3600);
+		
+		return TTC;
+	}
+	
+	// Custom function to measure lateral acceleration (but the way it formulates it is actually incorrect)
+	private float getLatAccel(Vector x_pos, Vector times)
+	{
+		// Create empty vectors to store values
+		Vector lat_veloc = new Vector();
+		float sum_lat = 0;
+		Vector lat_accel = new Vector();
+		float sum_accel = 0;
+		lat_veloc.add(sum_lat);
+		
+		//for(int i=0;i<=x_pos.size()-8;i+=6)
+		for(int i=0;i<x_pos.size()-1;i+=1)
+		{
+			// Calculate how much distance and time has passed between each value
+			// We will deduce velocity for every 0.1 seconds
+			float dist_traveled = Math.abs((float)x_pos.get(i+1)-(float)x_pos.get(i));
+			long time_elapsed = (long)times.get(i+1)-(long)times.get(i);
+			float time_elapsed2 = ((float)time_elapsed)/1000;
+			//System.out.println(time_elapsed2);
+			
+			/*System.out.println(dist_traveled);
+			System.out.println(time_elapsed);*/
+			
+			sum_lat = sum_lat + (dist_traveled/time_elapsed2);
+			//System.out.println(dist_traveled/time_elapsed2);
+			
+			// Store lateral velocities in this vector
+			lat_veloc.add(dist_traveled/time_elapsed2);
+		}
+		
+		//System.out.println("hi");
+		int k = 1;
+		
+		for(int j=1;j<=lat_veloc.size()-2;j++)
+		{
+			//System.out.println(sum_accel);
+			//sum_accel = sum_accel + (float)lat_veloc.get(j) - (float)lat_veloc.get(j-1);
+			long time_elapsed = (long)times.get(k+1)-(long)times.get(k);
+			float time_elapsed2 = ((float)time_elapsed)/1000;
+			//System.out.println(time_elapsed2);
+			
+			lat_accel.add(((float)lat_veloc.get(j) - (float)lat_veloc.get(j-1))/time_elapsed2);
+			//System.out.println(lat_accel.get(j-1));
+			k+=1;
+		}
+		
+		// Find out at what point the lateral acceleration became the highest
+		float maxLatAccel=(float) lat_accel.get(0);
+		
+		for (int a=1;a<=lat_accel.size()-1;a++)
+		{
+			
+			/*if (maxLatAccel>(float)lat_accel.get(a))
+			{
+				maxLatAccel=(float)TTC.get(a);
+			}*/
+			if (maxLatAccel<(float)lat_accel.get(a))
+			{
+				maxLatAccel=(float)lat_accel.get(a);
+			}
+			
+		}
+		return maxLatAccel;
+	}
 }

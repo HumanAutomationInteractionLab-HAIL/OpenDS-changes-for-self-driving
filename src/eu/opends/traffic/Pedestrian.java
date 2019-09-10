@@ -109,7 +109,7 @@ public class Pedestrian implements AnimationListener, TrafficObject
 		
 		//printAvailableAnimations("Body");
 		
-		followBox = new FollowBox(sim, this, pedestrianData.getFollowBoxSettings());
+		followBox = new FollowBox(sim, this, pedestrianData.getFollowBoxSettings(), true);
 		
 		initialized = true;
     }

@@ -62,7 +62,7 @@ public class DrivingTaskNamespaceContext implements NamespaceContext
     }
 
 	@Override
-	public Iterator<?> getPrefixes(String arg0) 
+	public Iterator<String> getPrefixes(String arg0) 
 	{
 		return null;
 	}

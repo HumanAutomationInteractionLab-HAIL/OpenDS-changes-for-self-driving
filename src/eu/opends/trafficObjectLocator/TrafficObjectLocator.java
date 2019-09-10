@@ -154,7 +154,7 @@ public class TrafficObjectLocator
 		{
 			float[] angles = trafficObjectSpatial.getLocalRotation().toAngles(null);
 			float angle = (angles[1] + degree*FastMath.DEG_TO_RAD) % FastMath.TWO_PI;
-			trafficObjectSpatial.setLocalRotation(new Quaternion().fromAngles(0, angle, 0));		
+			trafficObjectSpatial.setLocalRotation(new Quaternion().fromAngles(angles[0], angle, angles[2]));		
 		}
 	}
 	
@@ -284,9 +284,9 @@ public class TrafficObjectLocator
 		
 						+"<rotation quaternion=\"false\">"
 							+"<vector jtype=\"java_lang_Float\" size=\"3\">"
-								+"<entry>0</entry>"
+								+"<entry>" + angles[0] * FastMath.RAD_TO_DEG + "</entry>"
 								+"<entry>" + angles[1] * FastMath.RAD_TO_DEG + "</entry>"
-								+"<entry>0</entry>"
+								+"<entry>" + angles[2] * FastMath.RAD_TO_DEG + "</entry>"
 							+"</vector>"
 						+"</rotation>"
 		
@@ -323,9 +323,9 @@ public class TrafficObjectLocator
 		
 						+"<rotation quaternion=\"false\">"
 							+"<vector jtype=\"java_lang_Float\" size=\"3\">"
-								+"<entry>0</entry>"
+								+"<entry>" + angles[0] * FastMath.RAD_TO_DEG + "</entry>"
 								+"<entry>" + angles[1] * FastMath.RAD_TO_DEG + "</entry>"
-								+"<entry>0</entry>"
+								+"<entry>" + angles[2] * FastMath.RAD_TO_DEG + "</entry>"
 							+"</vector>"
 						+"</rotation>"
 		

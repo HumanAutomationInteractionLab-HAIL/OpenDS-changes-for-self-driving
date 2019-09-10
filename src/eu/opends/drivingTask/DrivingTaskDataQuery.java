@@ -254,10 +254,11 @@ public class DrivingTaskDataQuery
 		String trafficLightID = getValue(layer, path + "/" + layer + ":trafficLight", String.class);
 		Float headLightIntensity = getValue(layer, path + "/" + layer + ":headLightIntensity", Float.class);
 		String turnSignal = getValue(layer, path + "/" + layer + ":turnSignal", String.class);
+		Boolean brakeLightOn = getValue(layer, path + "/" + layer + ":brakeLightOn", Boolean.class);
 		Integer waitingTime = getValue(layer, path + "/" + layer + ":waitingTime", Integer.class);
 
 		if((id != null) && (translation != null) && (speed != null))
-			return new Waypoint(id, translation, speed, trafficLightID, headLightIntensity, turnSignal, waitingTime);
+			return new Waypoint(id, translation, speed, trafficLightID, headLightIntensity, turnSignal, brakeLightOn, waitingTime);
 		
 		return null;
 	}

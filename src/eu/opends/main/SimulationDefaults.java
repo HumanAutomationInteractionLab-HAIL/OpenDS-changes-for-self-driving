@@ -22,42 +22,42 @@ import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 
 /**
- * 
+ *
  * @author Rafael Math
  */
-public class SimulationDefaults 
+public class SimulationDefaults
 {
 	public static String driverName = "";
 	public static String drivingTaskFileName = "assets/DrivingTasks/Projects/Stadtmitte22/stadtmitte22.xml";
-	
+
 	public static Boolean General_pauseAfterStartup = false;
-	
+
 	public static boolean Lightning_enableConnection = false;
 	public static String Lightning_ip = "192.168.0.1";
 	public static int Lightning_port = 1234;
 	public static int Lightning_updateRate = 25;
 	public static float Lightning_scalingFactor = 1.0f;
 	public static boolean sendPosOriAsOneString = false;
-	
+
 	public static Boolean KnowledgeManager_enableConnection = true;
 	public static String KnowledgeManager_ip = "127.0.0.1";
 	public static Integer KnowledgeManager_port = 55432;
-	
+
 	public static Boolean Simphynity_enableConnection = false;
 	public static String Simphynity_ip = "127.0.0.1";
 	public static Integer Simphynity_port = 20777;
-	
+
 	public static boolean CANInterface_enableConnection = false;
 	public static String CANInterface_ip = "192.168.0.2";
 	public static int CANInterface_port = 5678;
 	public static int CANInterface_updateRate = 20;
 	public static float CANInterface_maxSteeringAngle = 270;
-	
+
 	public static boolean MultiDriver_enableConnection = false;
 	public static String MultiDriver_ip = "127.0.0.1";
 	public static int MultiDriver_port = 1234;
 	public static int MultiDriver_updateRate = 20;
-	
+
 	public static boolean Eyetracker_enableConnection = false;
 	public static int Eyetracker_port = 2010;
 	public static int Eyetracker_smoothingFactor = 10;
@@ -71,19 +71,19 @@ public class SimulationDefaults
 	public static boolean Eyetracker_warningFrame_show = false;
 	public static int Eyetracker_warningFrame_threshold = 3000;
 	public static int Eyetracker_warningFrame_flashingInterval = 500;
-	
+
 	public static String OculusRift_isAttached = "auto";
-	
+
 	public static boolean vsimrtiServer_startServer = false;
 	public static int vsimrtiServer_port = 1234;
-	
+
 	public static boolean SettingsControllerServer_startServer = false;
 	public static int SettingsControllerServer_port = 1000;
-	
+
 	public static boolean Analyzer_suppressPDFPopup = false;
-	
+
 	public static float gravity = 9.81f;
-	
+
 	public static Boolean engine_engineOn = true;
 	public static Float engine_minSpeed = 0f;
 	public static Float engine_maxSpeed = 130f;
@@ -103,18 +103,25 @@ public class SimulationDefaults
 	public static Vector3f initialCarPosition = new Vector3f(-36,0,0);
 	public static Quaternion initialCarRotation = new Quaternion(0, 0, 0, 1);
 	public static String skyTexture = "Textures/Sky/Bright/mountain.dds";
-	
+
 	public static Boolean cruiseControl_acc = false;
 	public static Float cruiseControl_safetyDistance_lateral = 20f;
 	public static Float cruiseControl_safetyDistance_forward = 5f;
 	public static Float cruiseControl_emergencyBrakeDistance = 20f;
 	public static Boolean cruiseControl_suppressDeactivationByBrake = false;
 	public static Float cruiseControl_initialSpeed = 0f;
-	
+
 	public static boolean UDPInterface_enableConnection = false;
 	public static String UDPInterface_host = "127.0.0.1";
 	public static int UDPInterface_port = 1234;
 	public static int UDPInterface_updateRate = 30;
 
+	public static Boolean USMeasurementSystem = false;
 
+	// multiThreding approach for traffic update loop. By default it takes number of available logical Cores + 1
+	public static boolean MultiThreading_enableThreads = false;
+	public static int multiThreading_numberOfThreads = Runtime.getRuntime().availableProcessors()+1;
+
+	// integration of high polygon model. By default it is disabled
+	public static Boolean HighPolygon_carModel = false;
 }

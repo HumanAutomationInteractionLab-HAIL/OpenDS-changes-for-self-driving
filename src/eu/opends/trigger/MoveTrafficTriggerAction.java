@@ -21,6 +21,7 @@ package eu.opends.trigger;
 import eu.opends.basics.SimulationBasics;
 import eu.opends.main.Simulator;
 import eu.opends.traffic.Pedestrian;
+import eu.opends.traffic.AnimatedRoadSign;
 import eu.opends.traffic.PhysicalTraffic;
 import eu.opends.traffic.TrafficCar;
 import eu.opends.traffic.TrafficObject;
@@ -40,7 +41,9 @@ public class MoveTrafficTriggerAction extends TriggerAction
 	private String wayPointID;
 	private Boolean engineOn;
 	private Boolean pedestrianEnabled;
-	
+	private Boolean animatedRoadSignEnabled;
+	private Boolean isSpeedLimitedToSteeringCar;
+	private Boolean hazardLights;
 	
 	/**
 	 * Creates a new MoveTraffic trigger action instance, providing traffic 
@@ -68,7 +71,7 @@ public class MoveTrafficTriggerAction extends TriggerAction
 	 * 			Set pedestrian enabled/disabled.
 	 */
 	public MoveTrafficTriggerAction(SimulationBasics sim, float delay, int maxRepeat, String trafficObjectName, String wayPointID,
-			Boolean engineOn, Boolean pedestrianEnabled) 
+			Boolean engineOn, Boolean pedestrianEnabled, Boolean isSpeedLimitedToSteeringCar, Boolean hazardLights) 
 	{
 		super(delay, maxRepeat);
 		this.sim = sim;
@@ -76,6 +79,8 @@ public class MoveTrafficTriggerAction extends TriggerAction
 		this.wayPointID = wayPointID;
 		this.engineOn = engineOn;
 		this.pedestrianEnabled = pedestrianEnabled;
+		this.isSpeedLimitedToSteeringCar = isSpeedLimitedToSteeringCar;
+		this.hazardLights = hazardLights;
 	}
 
 	
@@ -100,8 +105,17 @@ public class MoveTrafficTriggerAction extends TriggerAction
 					if(trafficObject instanceof TrafficCar && engineOn != null)
 						((TrafficCar)trafficObject).setEngineOn(engineOn);
 					
+					if(trafficObject instanceof TrafficCar && isSpeedLimitedToSteeringCar != null)
+						((TrafficCar)trafficObject).setSpeedLimitToSteeringCar(isSpeedLimitedToSteeringCar);
+					
+					if(trafficObject instanceof TrafficCar && hazardLights != null)
+						((TrafficCar)trafficObject).setHazardLights(hazardLights);
+					
 					if(trafficObject instanceof Pedestrian && pedestrianEnabled != null)
 						((Pedestrian)trafficObject).setEnabled(pedestrianEnabled);
+					
+					if(trafficObject instanceof AnimatedRoadSign && animatedRoadSignEnabled != null)
+						((AnimatedRoadSign)trafficObject).setEnabled(animatedRoadSignEnabled);
 				}
 				
 				updateCounter();

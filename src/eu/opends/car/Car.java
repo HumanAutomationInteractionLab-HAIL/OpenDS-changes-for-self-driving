@@ -294,7 +294,6 @@ public abstract class Car
 	
 	public VehicleControl getCarControl()
 	{
-		
 		return carControl;
 	}
 	
@@ -425,7 +424,7 @@ public abstract class Car
 		
 		// compensate that car is actually driving backwards
 		float[] angles = rotation.toAngles(null);
-		angles[1] = -angles[1];
+		angles[1] = -angles[1]; //FIXME
 		rotation = new Quaternion().fromAngles(angles);
 		
 		carControl.setPhysicsRotation(rotation);
@@ -569,7 +568,7 @@ public abstract class Car
 	
 
 	/**
-	 * Unsteer the front wheels
+	 * Unsteer the front wheels. This is a fairly useful function for when you're turning the autopilot off
 	 */
 	public void unsteer() 
 	{
@@ -612,7 +611,7 @@ public abstract class Car
 		updateDistanceOfCurrentFrame();
 		
 		if(distanceOfCurrentFrame > 0.001f)
-			mileage += distanceOfCurrentFrame*.6214f;
+			mileage += distanceOfCurrentFrame;
 		
 		return mileage;
 	}
@@ -638,11 +637,10 @@ public abstract class Car
 	public String getMileageString()
 	{
 		float mileage = getMileage();
-		return (int)(mileage*100f)/100f+ " mi";
-		/*if(mileage < 1000)
+		if(mileage < 1000)
 			return ((int)mileage) + " m";
 		else
-			return ((int)(mileage/10f))/100f+ " km";*/
+			return ((int)(mileage/10f))/100f + " km";
 	}
 	
 	

@@ -1,6 +1,6 @@
 /*
 *  This file is part of OpenDS (Open Source Driving Simulator).
-*  Copyright (C) 2015 Rafael Math
+*  Copyright (C) 2016 Rafael Math
 *
 *  OpenDS is free software: you can redistribute it and/or modify
 *  it under the terms of the GNU General Public License as published by
@@ -20,10 +20,6 @@ package eu.opends.canbus;
 
 import java.net.Socket;
 import java.net.SocketException;
-
-import com.jme3.math.Vector3f;
-import com.jme3.math.Quaternion;
-
 //import java.util.Calendar;
 //import java.util.GregorianCalendar;
 import java.io.*;
@@ -36,7 +32,6 @@ import eu.opends.drivingTask.settings.SettingsLoader.Setting;
 import eu.opends.environment.XMLParser;
 import eu.opends.main.SimulationDefaults;
 import eu.opends.main.Simulator;
-import eu.opends.tools.PanelCenter;
 
 /**
  * This class represents the connector to the CAN-Interface. Steering, gas, brake and 
@@ -53,20 +48,14 @@ public class CANClient extends Thread
 	private float maxSteeringAngle;	
 	private Simulator sim;
 	private Car car;
-	private Car tcar1;
-	//tcar2,tcar3,tcar4,tcar5,tcar6;
 	//private int framerate;
 	private boolean stoprequested;
 	private boolean errorOccurred;
 	private float steeringAngle;
 	private boolean doSteering;
-	private boolean firstValue=true;
-	private boolean test=true;
 	//private Calendar timeOfLastFire;
 	private PrintWriter printWriter;
 	private Socket socket;
-	public static float carspeed;
-	public static float gasvalue;
 	
 	
 	/**
@@ -81,12 +70,6 @@ public class CANClient extends Thread
 		
 		this.sim = sim;
 		this.car = sim.getCar();
-		this.tcar1=sim.tcar1;
-		/*this.tcar2=sim.tcar2;
-		this.tcar3=sim.tcar3;
-		this.tcar4=sim.tcar4;
-		this.tcar5=sim.tcar5;
-		this.tcar6=sim.tcar6;*/
 		stoprequested = false;
 		errorOccurred = false;
 		steeringAngle = 0.0f;
@@ -105,7 +88,7 @@ public class CANClient extends Thread
 			
 			// connect to Server
 			socket = new Socket(ip,port);
-			socket.setSoTimeout(100);
+			socket.setSoTimeout(10);
 
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -129,100 +112,10 @@ public class CANClient extends Thread
 			try {
 
 				// delete "NUL" at the end of each line
-				String message1 = readMessage(socket).replace("\0", "");
-				String message = message1.substring(0,message1.lastIndexOf(">")+1);
-				String carposition = message1.substring(message1.lastIndexOf(">")+1);
-				String[] newposition = carposition.split(",");
-				System.out.println(message);
-				//driver car positions and rotations
-				float x_position = Float.parseFloat(newposition[0]);
-				float z_position = Float.parseFloat(newposition[1]);
-				float x_rotation = Float.parseFloat(newposition[2]);
-				float y_rotation = Float.parseFloat(newposition[3]);
-				float z_rotation = Float.parseFloat(newposition[4]);
-				float w_rotation = Float.parseFloat(newposition[5]);
-				//traffic car 1 positions and rotations
-				float car1_x_position = Float.parseFloat(newposition[6]);
-				float car1_z_position = Float.parseFloat(newposition[7]);
-				float car1_x_rotation = Float.parseFloat(newposition[8]);
-				float car1_y_rotation = Float.parseFloat(newposition[9]);
-				float car1_z_rotation = Float.parseFloat(newposition[10]);
-				float car1_w_rotation = Float.parseFloat(newposition[11]);
-				//traffic car 3 positions and rotations
-				/*float car3_x_position = Float.parseFloat(newposition[12]);
-				float car3_z_position = Float.parseFloat(newposition[13]);
-				float car3_x_rotation = Float.parseFloat(newposition[14]);
-				float car3_y_rotation = Float.parseFloat(newposition[15]);
-				float car3_z_rotation = Float.parseFloat(newposition[16]);
-				float car3_w_rotation = Float.parseFloat(newposition[17]);
-				//traffic car 4 positions and rotations
-				float car4_x_position = Float.parseFloat(newposition[18]);
-				float car4_z_position = Float.parseFloat(newposition[19]);
-				float car4_x_rotation = Float.parseFloat(newposition[20]);
-				float car4_y_rotation = Float.parseFloat(newposition[21]);
-				float car4_z_rotation = Float.parseFloat(newposition[22]);
-				float car4_w_rotation = Float.parseFloat(newposition[23]);
-				//traffic car 5 positions and rotations
-				float car5_x_position = Float.parseFloat(newposition[24]);
-				float car5_z_position = Float.parseFloat(newposition[25]);
-				float car5_x_rotation = Float.parseFloat(newposition[26]);
-				float car5_y_rotation = Float.parseFloat(newposition[27]);
-				float car5_z_rotation = Float.parseFloat(newposition[28]);
-				float car5_w_rotation = Float.parseFloat(newposition[29]);
-				//traffic car 2 positions and rotations
-				float car2_x_position = Float.parseFloat(newposition[30]);
-				float car2_z_position = Float.parseFloat(newposition[31]);
-				float car2_x_rotation = Float.parseFloat(newposition[32]);
-				float car2_y_rotation = Float.parseFloat(newposition[33]);
-				float car2_z_rotation = Float.parseFloat(newposition[34]);
-				float car2_w_rotation = Float.parseFloat(newposition[35]);*/
-				
-				//carspeed = Float.parseFloat(newposition[8]);
-				//gasvalue = Float.parseFloat(newposition[10]);
-				
-				
-				//System.out.println(x_position + "," + z_position + "," + car3_x_position + "," + car3_z_position);
-				//double distance = Math.sqrt(Math.pow(x_position-car.getPosition().getX(), 2)+Math.pow(z_position-car.getPosition().getZ(), 2));
-				//if(distance>=0.25){
-					//float yval =-5.671f;
-					//float yval = -4.75f;
-					//float yval = -5.48f;
-					float yval = -0.350f;
-					
-					//for(int i=0;i!=newposition.length;i++)
-						//System.out.println(newposition[i]);
-					Quaternion q = new Quaternion(x_rotation, -y_rotation, z_rotation, w_rotation);
-					car.setPosition(x_position,yval,z_position);
-					car.setRotation(q);
-					//PanelCenter.setSpeedIndicatorRotation(.5f);
-					
-					Quaternion q1 = new Quaternion(car1_x_rotation,-car1_y_rotation,car1_z_rotation,car1_w_rotation);
-					tcar1.setPosition(car1_x_position,yval,car1_z_position);
-					tcar1.setRotation(q1);
-					
-					/*Quaternion q2 = new Quaternion(car2_x_rotation,-car2_y_rotation,car2_z_rotation,car2_w_rotation);
-					tcar2.setPosition(car2_x_position,yval,car2_z_position);
-					tcar2.setRotation(q2);
-					
-					Quaternion q3 = new Quaternion(car3_x_rotation,-car3_y_rotation,car3_z_rotation,car3_w_rotation);
-					tcar3.setPosition(car3_x_position,yval,car3_z_position);
-					tcar3.setRotation(q3);
-					
-					Quaternion q4 = new Quaternion(car4_x_rotation,-car4_y_rotation,car4_z_rotation,car4_w_rotation);
-					tcar4.setPosition(car4_x_position,yval,car4_z_position);
-					tcar4.setRotation(q4);*/
-					
-					/*Quaternion q5 = new Quaternion(car5_x_rotation,-car5_y_rotation,car5_z_rotation,car5_w_rotation);
-					tcar5.setPosition(car5_x_position,yval,car5_z_position);
-					tcar5.setRotation(q5);*/
-					
-					/*q.set(car6_x_rotation,-car6_y_rotation,car6_z_rotation,car6_w_rotation);
-					tcar6.setPosition(car6_x_position,yval,car6_z_position);
-					tcar6.setRotation(q);*/
-			//	}
+				String message = readMessage(socket).replace("\0", "");
 				
 				// print XML instruction
-				//System.out.println(message1);
+				//System.out.println(message);
 				
 				// parse and evaluate XML instruction
 				XMLParser parser = new XMLParser("<CAN>" + message + "</CAN>");
@@ -408,16 +301,10 @@ public class CANClient extends Thread
 			
 			// get target steering angle from real car
 			// maximum angle will be matched to -1 or 1, respectively
-			//float targetAngle = -Math.max(Math.min(steeringAngle/maxSteeringAngle,1),-1);
-			if(steeringAngle!=0&&firstValue)
-			{
-				car.getCarControl().setLinearVelocity(new Vector3f(20.581f,0f,.27303f));
-				firstValue=false;
-			}
-			float targetAngle = -steeringAngle;
+			float targetAngle = -Math.max(Math.min(steeringAngle/maxSteeringAngle,1),-1);
 			
 			// print target (real car) steering angle
-			System.out.println("target: " + targetAngle);
+			//System.out.println("target: " + targetAngle);
 			
 			// if target angle is close to straight ahead, steer straight ahead
 			if((targetAngle >= -0.001f) && (targetAngle <= 0.001f))	

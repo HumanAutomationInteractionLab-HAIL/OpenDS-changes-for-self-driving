@@ -32,6 +32,7 @@ import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.shape.Box;
+import com.jme3.scene.shape.Sphere;
 import com.jme3.texture.Texture;
 
 import eu.opends.car.Car;
@@ -54,6 +55,9 @@ public class TrafficCar extends Car implements TrafficObject
 	private float overwriteSpeed = -1;
 	private Material brickMaterial;
 	private boolean loseCargo = false;
+	private boolean isSpeedLimitedToSteeringCar = false;
+	private boolean hazardLights = false;
+	private float hazardLightCounter;
 
 	
 	public TrafficCar(Simulator sim, TrafficCarData trafficCarData)
@@ -86,24 +90,30 @@ public class TrafficCar extends Car implements TrafficObject
 		
 		modelPath = trafficCarData.getModelPath();
 		
+		isSpeedLimitedToSteeringCar = trafficCarData.isSpeedLimitedToSteeringCar();
+		
+		hazardLights = trafficCarData.hazardLights();
+		//hazardLights = true;
+		hazardLightCounter=0;
+
 		init();
 
 		
-		/*
+		
 		//---------------------------------
 		// add bounding sphere to a traffic car which can be hit by the user-controlled car
-		Sphere sphere = new Sphere(20, 20, 2.5f);
+/*		Sphere sphere = new Sphere(20, 20, 2.5f);
 		Geometry boundingSphere = new Geometry(name + "_boundingSphere", sphere);
 		Material boundingSphereMaterial = new Material(sim.getAssetManager(), "Common/MatDefs/Misc/Unshaded.j3md");
 		boundingSphereMaterial.setColor("Color", ColorRGBA.Yellow);
 		boundingSphere.setMaterial(boundingSphereMaterial);
 		//boundingSphere.setCullHint(CullHint.Always);
 		carNode.attachChild(boundingSphere);
-		sim.getTriggerNode().attachChild(carNode);
+		sim.getTriggerNode().attachChild(carNode);*/
 		//---------------------------------
-		*/
 		
-		followBox = new FollowBox(sim, this, trafficCarData.getFollowBoxSettings());
+		
+		followBox = new FollowBox(sim, this, trafficCarData.getFollowBoxSettings(), true);
 		
 		// cargo
 		brickMaterial = new Material(sim.getAssetManager(), "Common/MatDefs/Misc/Unshaded.j3md");
@@ -152,8 +162,18 @@ public class TrafficCar extends Car implements TrafficObject
 	{
 		followBox.setToWayPoint(index);
 	}
+	
+	public void setSpeedLimitToSteeringCar(boolean speedLimited)
+	{
+		isSpeedLimitedToSteeringCar = speedLimited;
+	}
 
-
+	// Turn hazard lights on, this is mostly for the Broken Vehicle event
+	public void setHazardLights(boolean hLights)
+	{
+		hazardLights = hLights;
+	}
+	
 	public void loseCargo()
 	{
 		loseCargo = true;
@@ -372,7 +392,16 @@ public class TrafficCar extends Car implements TrafficObject
 		// reduced speed to reach next speed limit in time
 		float reducedSpeed = followBox.getReducedSpeed();
 		
-		return Math.max(Math.min(regularSpeed, reducedSpeed),0);
+		float targetSpeed = Math.max(Math.min(regularSpeed, reducedSpeed),0);
+		
+		// limit maximum speed to speed of steering car 
+		if(isSpeedLimitedToSteeringCar)
+		{
+			targetSpeed = sim.getCar().getCurrentSpeedKmh() * 0.75f;
+			//targetSpeed = Math.min(desiredSpeed, targetSpeed);
+		}
+		
+		return targetSpeed;
 	}
 	
 	
@@ -494,6 +523,36 @@ public class TrafficCar extends Car implements TrafficObject
 			
 			if(getTurnSignal() != currentTurnSignalState)
 				setTurnSignal(currentTurnSignalState);
+		}
+		
+		// set brake light
+		/*Boolean currentBrakeLightOn = followBox.getCurrentWayPoint().isBrakeLightOn();
+		if(currentBrakeLightOn != null)
+			setBrakeLight(currentBrakeLightOn);*/
+		
+		// The parameters for how long the hazard lights last
+		if(hazardLights)
+		{
+			//currentBrakeLightOn = followBox.getCurrentWayPoint().isBrakeLightOn();
+			//System.out.println("hazard");
+			
+			if (hazardLightCounter<20)
+			{
+				//setTurnSignal(TurnSignalState.OFF);
+				setBrakeLight(false);
+				hazardLightCounter = hazardLightCounter+1;
+				//System.out.println("both");
+			}
+			else if (hazardLightCounter<40)
+				{
+				//setTurnSignal(TurnSignalState.BOTH);
+				setBrakeLight(true);
+				hazardLightCounter = hazardLightCounter+1;
+				//System.out.println("off");
+				}
+				else
+					hazardLightCounter=0;
+			
 		}
 	}
 	

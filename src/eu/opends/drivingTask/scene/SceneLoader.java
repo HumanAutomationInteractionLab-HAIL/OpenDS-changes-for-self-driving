@@ -26,10 +26,12 @@ import java.util.TreeMap;
 
 import javax.xml.xpath.XPathConstants;
 
+import org.omg.CosNaming.NamingContextPackage.NotFound;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import com.jme3.asset.AssetManager;
+import com.jme3.asset.AssetNotFoundException;
 import com.jme3.asset.TextureKey;
 import com.jme3.asset.plugins.FileLocator;
 import com.jme3.audio.AudioNode;
@@ -63,6 +65,8 @@ import eu.opends.basics.SimulationBasics;
 import eu.opends.car.ResetPosition;
 import eu.opends.drivingTask.DrivingTaskDataQuery;
 import eu.opends.drivingTask.DrivingTaskDataQuery.Layer;
+import eu.opends.drivingTask.settings.SettingsLoader.Setting;
+import eu.opends.main.SimulationDefaults;
 import eu.opends.tools.Util;
 import eu.opends.visualization.MovieData;
 
@@ -80,6 +84,14 @@ public class SceneLoader
 	private Map<String, ResetPosition> resetPositionMap = new HashMap<String, ResetPosition>();
 	private List<MapObject> mapObjectsList = new ArrayList<MapObject>();
 	
+	// high polygon model components
+	private String chassis;
+	private String steeringWheel;
+	private String wheelFrontLeft;
+	private String wheelFrontRight;
+	private String wheelBackLeft;
+	private String wheelBackRight;
+	private String instrumentCluster;
 	
 	public SceneLoader(DrivingTaskDataQuery dtData, SimulationBasics sim) 
 	{
@@ -93,6 +105,33 @@ public class SceneLoader
 		createMapObjects();
 	}
 	
+	public String getChassis(){
+		return chassis;
+	}
+	
+	public String getSteeringWheel(){
+		return steeringWheel;
+	}
+	
+	public String getWheelFrontLeft(){
+		return wheelFrontLeft;
+	}
+	
+	public String getWheelFrontRight(){
+		return wheelFrontRight;
+	}
+	
+	public String getWheelBackLeft(){
+		return wheelBackLeft; 
+	}
+	
+	public String getWheelBackRight(){
+		return wheelBackRight;
+	}
+	
+	public String getInstrumnetCluster(){
+		return instrumentCluster;
+	}
 	
 	public Map<String,AudioNode> getAudioNodes()
 	{
@@ -479,6 +518,32 @@ public class SceneLoader
 				//		"/scene:scene/scene:models/scene:model["+k+"]/@id", String.class);
 				String name = currentNode.getAttributes().getNamedItem("id").getNodeValue();
 				
+				
+				try {
+					if (name.equals("shadowChassis"))
+						chassis = currentNode.getAttributes().getNamedItem("key").getNodeValue();
+										
+					if (name.equals("shadowSteeringWheel"))
+						steeringWheel = currentNode.getAttributes().getNamedItem("key").getNodeValue();
+					
+					if (name.equals("shadowInstrumentCluster"))
+						instrumentCluster = currentNode.getAttributes().getNamedItem("key").getNodeValue();
+					
+					if (name.equals("shadowWheelFrontLeft"))
+						wheelFrontLeft = currentNode.getAttributes().getNamedItem("key").getNodeValue();
+	
+					if (name.equals("shadowWheelFrontRight"))
+						wheelFrontRight = currentNode.getAttributes().getNamedItem("key").getNodeValue();
+					
+					if (name.equals("shadowWheelBackLeft"))
+						wheelBackLeft = currentNode.getAttributes().getNamedItem("key").getNodeValue();
+	
+					if (name.equals("shadowWheelBackRight"))
+						wheelBackRight = currentNode.getAttributes().getNamedItem("key").getNodeValue();
+				} catch (Exception e){
+					e.printStackTrace();
+				}
+			
 				// get spatial model
 				Spatial spatial = null;
 				//String spatialURL = dtData.getValue(Layer.SCENE, 

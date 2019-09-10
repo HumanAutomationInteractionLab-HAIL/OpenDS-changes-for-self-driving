@@ -38,13 +38,15 @@ public class SetupBrakeReactionTimerTriggerAction extends TriggerAction
 	private float holdSpeedFor;
 	private String failSound;
 	private String successSound;
+	private String leadVehicle;
+	private String leadObstacle;
 	private String comment;
 	
 	
 	public SetupBrakeReactionTimerTriggerAction(float delay, int maxRepeat, String timerID, String reactionGroupID, 
 			float startSpeed, float targetSpeed, boolean mustPressBrakePedal, float taskCompletionAfterTime, 
 			float taskCompletionAfterDistance, boolean allowLaneChange, float holdSpeedFor, String failSound,
-			String successSound, String comment, Simulator sim) 
+			String successSound, String leadVehicle, String leadObstacle, String comment, Simulator sim) 
 	{
 		super(delay, maxRepeat);
 		
@@ -59,6 +61,8 @@ public class SetupBrakeReactionTimerTriggerAction extends TriggerAction
 		this.holdSpeedFor = holdSpeedFor;
 		this.failSound = failSound;
 		this.successSound = successSound;
+		this.leadVehicle = leadVehicle;
+		this.leadObstacle = leadObstacle;
 		this.comment = comment;
 		this.sim = sim;
 	}
@@ -70,7 +74,7 @@ public class SetupBrakeReactionTimerTriggerAction extends TriggerAction
 		{
 			sim.getReactionCenter().setupBrakeReactionTimer(timerID, reactionGroupID, startSpeed, targetSpeed,
 					mustPressBrakePedal, taskCompletionAfterTime, taskCompletionAfterDistance, allowLaneChange, 
-					holdSpeedFor, failSound, successSound, comment);
+					holdSpeedFor, failSound, successSound, leadVehicle, leadObstacle, comment);
 			
 			updateCounter();
 		}
