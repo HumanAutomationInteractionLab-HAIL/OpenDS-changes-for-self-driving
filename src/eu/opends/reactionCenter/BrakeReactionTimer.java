@@ -142,15 +142,10 @@ public class BrakeReactionTimer extends ReactionTimer
 			long currentTime = System.currentTimeMillis();
 
 			if(leadVehicle.equals(""))
-				TTC.add(getTTC(getObstacleLoc(leadObstacle),0));
+				TTC.add(getTTC(getObstacleLoc(leadObstacle)));
 			else
-			{
-				TTC.add(getTTC(getVehicleLoc(leadVehicle),30));
-				System.out.println(getTTC(getVehicleLoc(leadVehicle),30));
-				System.out.println(getVehicleLoc(leadVehicle));
-				System.out.println(sim.getCar().getPosition());
-				System.out.println(sim.getCar().getCurrentSpeedKmh());
-			}
+				TTC.add(getTTC(getVehicleLoc(leadVehicle)));
+			
 			//System.out.println(TTC);
 			
 			
@@ -445,16 +440,14 @@ public class BrakeReactionTimer extends ReactionTimer
 	}
 	
 	
-	private Float getTTC(Vector3f obstaclePos, float speed)
+	private Float getTTC(Vector3f obstaclePos)
 	{
 		//float distanceToObstacle = obstaclePos.distance(sim.getCar().getPosition());
 		
 		//float lateralDistance = sim.getCar().getLateralDistance(obstaclePos);
 		float forwardDistance = (sim.getCar().getForwardDistance(obstaclePos))/1000;
 		
-		float TTC = forwardDistance/((sim.getCar().getCurrentSpeedKmh()-speed)/3600);
-		
-		
+		float TTC = forwardDistance/((sim.getCar().getCurrentSpeedKmh())/3600);
 		
 		return TTC;
 	}

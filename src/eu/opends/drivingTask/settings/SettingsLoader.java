@@ -1,7 +1,7 @@
 /*
 
 *  This file is part of OpenDS (Open Source Driving Simulator).
-*  Copyright (C) 2016 Rafael Math
+*  Copyright (C) 2015 Rafael Math
 *
 *  OpenDS is free software: you can redistribute it and/or modify
 *  it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@ import eu.opends.drivingTask.DrivingTaskDataQuery.Layer;
 import eu.opends.input.KeyMapping;
 
 /**
- * 
+ *
  * @author Rafael Math
  */
 @SuppressWarnings("unchecked")
@@ -94,7 +94,7 @@ public class SettingsLoader
 		General_USMeasurementSystem("settings:general/settings:USMeasurementSystem"),
 		HighPolygon_carModel("settings:shadowCarModel/settings:enableHighPolyCarModel"),
 		Analyzer_fileName("settings:analyzer/settings:fileName"),
-		Analyzer_suppressPDFPopup("settings:analyzer/settings:suppressPDFPopup"), 
+		Analyzer_suppressPDFPopup("settings:analyzer/settings:suppressPDFPopup"),
 		ObjectLocator_enable("settings:objectLocator/settings:enable"),
 		ObjectLocator_fileName("settings:objectLocator/settings:fileName"),
 		HMI_enableConnection("settings:HMI/settings:enableConnection"),
@@ -157,7 +157,7 @@ public class SettingsLoader
 		Joystick_damperForce("settings:controllers/settings:joystick/settings:damperForce"),
 		Mouse_scrollSensitivityFactor("settings:controllers/settings:mouse/settings:scrollSensitivityFactor"),
 		Mouse_minScrollZoom("settings:controllers/settings:mouse/settings:minScrollZoom"),
-		Mouse_maxScrollZoom("settings:controllers/settings:mouse/settings:maxScrollZoom"), 
+		Mouse_maxScrollZoom("settings:controllers/settings:mouse/settings:maxScrollZoom"),
 		Eyetracker_enableConnection("settings:eyetracker/settings:enableConnection"),
 		Eyetracker_port("settings:eyetracker/settings:port"),
 		Eyetracker_smoothingFactor("settings:eyetracker/settings:smoothingFactor"),
@@ -172,21 +172,24 @@ public class SettingsLoader
 		Eyetracker_warningFrame_threshold("settings:eyetracker/settings:warningFrame/settings:threshold"),
 		Eyetracker_warningFrame_flashingInterval("settings:eyetracker/settings:warningFrame/settings:flashingInterval"),
 		OculusRift_isAttached("settings:oculusRift/settings:isAttached"),
+		UDPInterface_enableConnection("settings:UDPInterface/settings:enableConnection"),
+		UDPInterface_host("settings:UDPInterface/settings:host"),
+		UDPInterface_port("settings:UDPInterface/settings:port"),
+		UDPInterface_updateRate("settings:UDPInterface/settings:updateRate"),
 		Maritime_displayMode("settings:maritime/settings:displayMode"),
 		MultiThreading_enableThreads("settings:multiThreading/settings:enableThreads"),
 		MultiThreading_numberOfThreads("settings:multiThreading/settings:numberOfThreads");
-		
-		
+
 		private String path;
-		
+
 		Setting(){
 			path = null;
 		}
-		
+
 		Setting(String p){
 			path = p;
 		}
-		
+
 		public String getXPathQuery()
 		{
 			if(path!=null)
@@ -196,34 +199,34 @@ public class SettingsLoader
 			else
 			{
 				String[] array = this.toString().split("_");
-				return "/settings:settings/settings:"+array[0]+"/settings:"+array[1];	
+				return "/settings:settings/settings:"+array[0]+"/settings:"+array[1];
 			}
 		}
 	}
 
-	
-	public SettingsLoader(DrivingTaskDataQuery dtData) 
+
+	public SettingsLoader(DrivingTaskDataQuery dtData)
 	{
 		this.dtData = dtData;
 		loadKeyAssignments();
 		loadJoystickKeyAssignments();
 	}
-	
 
-	private void loadKeyAssignments() 
+
+	private void loadKeyAssignments()
 	{
 		String path = "/settings:settings/settings:controllers/settings:keyboard/settings:keyAssignments/settings:keyAssignment";
-		NodeList keyAssignmentNodes = (NodeList) dtData.xPathQuery(Layer.SETTINGS, 
+		NodeList keyAssignmentNodes = (NodeList) dtData.xPathQuery(Layer.SETTINGS,
 				path, XPathConstants.NODESET);
 
-		for (int k = 1; k <= keyAssignmentNodes.getLength(); k++) 
+		for (int k = 1; k <= keyAssignmentNodes.getLength(); k++)
 		{
-			String function = dtData.getValue(Layer.SETTINGS, 
+			String function = dtData.getValue(Layer.SETTINGS,
 					path + "["+k+"]/@function", String.class);
-			
-			String keyList = dtData.getValue(Layer.SETTINGS, 
+
+			String keyList = dtData.getValue(Layer.SETTINGS,
 					path + "["+k+"]/@key", String.class).toUpperCase();
-			
+
 			if(!function.isEmpty())
 			{
 				if(!keyAssignmentMap.containsKey(function))
@@ -231,7 +234,7 @@ public class SettingsLoader
 					// insert key pair to keyAssignmentMap
 					if(keyList.isEmpty())
 					{
-						// do not assign any key and remove default assignment 
+						// do not assign any key and remove default assignment
 						keyAssignmentMap.put(function, new String[]{});
 						//System.err.println("A:" + function);
 					}
@@ -239,10 +242,10 @@ public class SettingsLoader
 					{
 						// assign a comma-separated list of keys
 						String[] newKeys = keyList.split(",");
-						
+
 						for(int i = 0; i<newKeys.length; i++)
 							newKeys[i] = "KEY_" + newKeys[i].replace("KEY_", "");
-						
+
 						keyAssignmentMap.put(function, newKeys);
 					}
 				}
@@ -254,33 +257,33 @@ public class SettingsLoader
 						// assign a comma-separated list of keys
 						String[] originalKeys = keyAssignmentMap.get(function);
 						String[] newKeys = keyList.split(",");
-						
+
 						for(int i = 0; i<newKeys.length; i++)
 							newKeys[i] = "KEY_" + newKeys[i].replace("KEY_", "");
-						
-						String[] allKeys = joinArrays(originalKeys, newKeys);					    
+
+						String[] allKeys = joinArrays(originalKeys, newKeys);
 						keyAssignmentMap.put(function, allKeys);
 					}
 				}
 			}
-		}		
+		}
 	}
 
-	
-	private void loadJoystickKeyAssignments() 
+
+	private void loadJoystickKeyAssignments()
 	{
 		String path = "/settings:settings/settings:controllers/settings:joystick/settings:keyAssignments/settings:keyAssignment";
-		NodeList keyAssignmentNodes = (NodeList) dtData.xPathQuery(Layer.SETTINGS, 
+		NodeList keyAssignmentNodes = (NodeList) dtData.xPathQuery(Layer.SETTINGS,
 				path, XPathConstants.NODESET);
 
-		for (int k = 1; k <= keyAssignmentNodes.getLength(); k++) 
+		for (int k = 1; k <= keyAssignmentNodes.getLength(); k++)
 		{
-			String function = dtData.getValue(Layer.SETTINGS, 
+			String function = dtData.getValue(Layer.SETTINGS,
 					path + "["+k+"]/@function", String.class);
-			
-			String keyList = dtData.getValue(Layer.SETTINGS, 
+
+			String keyList = dtData.getValue(Layer.SETTINGS,
 					path + "["+k+"]/@key", String.class).toUpperCase();
-			
+
 			if(!function.isEmpty())
 			{
 				if(!keyAssignmentMap.containsKey(function))
@@ -288,7 +291,7 @@ public class SettingsLoader
 					// insert key pair to keyAssignmentMap
 					if(keyList.isEmpty())
 					{
-						// do not assign any key and remove default assignment 
+						// do not assign any key and remove default assignment
 						keyAssignmentMap.put(function, new String[]{});
 						//System.err.println("A:" + function);
 					}
@@ -296,10 +299,10 @@ public class SettingsLoader
 					{
 						// assign a comma-separated list of keys
 						String[] newKeys = keyList.split(",");
-						
+
 						for(int i = 0; i<newKeys.length; i++)
 							newKeys[i] = "BUTTON_" + newKeys[i].replace("BUTTON_", "");
-						
+
 						keyAssignmentMap.put(function, newKeys);
 					}
 				}
@@ -311,76 +314,76 @@ public class SettingsLoader
 						// assign a comma-separated list of keys
 						String[] originalKeys = keyAssignmentMap.get(function);
 						String[] newKeys = keyList.split(",");
-						
+
 						for(int i = 0; i<newKeys.length; i++)
 							newKeys[i] = "BUTTON_" + newKeys[i].replace("BUTTON_", "");
-						
-						String[] allKeys = joinArrays(originalKeys, newKeys);					    
+
+						String[] allKeys = joinArrays(originalKeys, newKeys);
 						keyAssignmentMap.put(function, allKeys);
 					}
 				}
 			}
-		}		
+		}
 	}
-	
-	
-	private static String[] joinArrays(String [] ... arrays) 
+
+
+	private static String[] joinArrays(String [] ... arrays)
 	{
 		// calculate size of target array
 		int size = 0;
-		for (String[] array : arrays) 
+		for (String[] array : arrays)
 		  size += array.length;
-		
+
 		String[] result = new String[size];
-		
+
 		int j = 0;
-		for (String[] array : arrays) 
+		for (String[] array : arrays)
 		{
 			for (String s : array)
 				result[j++] = s;
 		}
-		
+
 		return result;
 	}
-	
+
 
 	/**
 	 * Looks up the sub node (specified in parameter name) of the given element node
-	 * and writes the data to the global variable with the same name. If this was 
-	 * successful, the global variable "isSet_&lt;name&gt;" will be set to true. 
-	 * 
+	 * and writes the data to the global variable with the same name. If this was
+	 * successful, the global variable "isSet_&lt;name&gt;" will be set to true.
+	 *
 	 * @param <T>
 	 * 			Type of property to look up.
-	 * 
+	 *
 	 * @param setting
 	 * 			Property to look up.
-	 * 
+	 *
 	 * @param defaultValue
 	 * 			Default value (will be returned if no valid property could be found).
-	 * 
+	 *
 	 * @return
 	 * 			Value of the property.
 	 */
 	public <T> T getSetting(Setting setting, T defaultValue)
-	{		
+	{
 		try {
-			
+
 			Class<T> cast = (Class<T>) defaultValue.getClass();
 			T returnvalue = (T) dtData.getValue(Layer.SETTINGS, setting.getXPathQuery(), cast);
-			
+
 			if(returnvalue == null)
 				returnvalue = defaultValue;
-			
+
 			return returnvalue;
 
 		} catch (Exception e2) {
 			dtData.reportInvalidValueError(setting.toString(), dtData.getSettingsPath());
 		}
-		
+
 		return defaultValue;
 	}
-	
-	
+
+
 	public List<KeyMapping> lookUpKeyMappings(ArrayList<KeyMapping> keyMappingList)
 	{
 		for(KeyMapping keyMapping : keyMappingList)
@@ -389,7 +392,7 @@ public class SettingsLoader
 			if(keyAssignmentMap.containsKey(function))
 				keyMapping.setKeys(keyAssignmentMap.get(function));
 		}
-		
+
 		return keyMappingList;
 	}
 
