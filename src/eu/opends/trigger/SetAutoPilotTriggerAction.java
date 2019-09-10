@@ -16,19 +16,37 @@
 *  along with OpenDS. If not, see <http://www.gnu.org/licenses/>.
 */
 
+package eu.opends.trigger;
 
-package eu.opends.traffic;
+import eu.opends.main.Simulator;
 
 /**
- * Animation listener.
- *
- * @author Tommi S.E. Laukkanen
+ * 
+ * @author Rafael Math
  */
-public interface AnimationListener
+public class SetAutoPilotTriggerAction extends TriggerAction
 {
-    /**
-     * Invoked when animation cycle completes.
-     * @param animationName the name of the animation which completed
-     */
-    public void onAnimCycleDone(final String animationName);
+	private Simulator sim;
+	private boolean autopilotOn;
+	
+	
+	public SetAutoPilotTriggerAction(float delay, int maxRepeat, Simulator sim, boolean autopilotOn) 
+	{
+		super(delay, maxRepeat);
+		this.sim = sim;
+		this.autopilotOn = autopilotOn;
+	}
+	
+	
+	@Override
+	protected void execute() 
+	{
+		if(!isExceeded())
+		{
+			sim.getCar().setAutoPilot(autopilotOn);
+				
+			updateCounter();
+		}
+	}
+
 }
