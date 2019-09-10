@@ -1,6 +1,6 @@
 /*
 *  This file is part of OpenDS (Open Source Driving Simulator).
-*  Copyright (C) 2016 Rafael Math
+*  Copyright (C) 2015 Rafael Math
 *
 *  OpenDS is free software: you can redistribute it and/or modify
 *  it under the terms of the GNU General Public License as published by
@@ -110,5 +110,11 @@ public class SimulationDefaults
 	public static Float cruiseControl_emergencyBrakeDistance = 20f;
 	public static Boolean cruiseControl_suppressDeactivationByBrake = false;
 	public static Float cruiseControl_initialSpeed = 0f;
+	
+	public static boolean UDPInterface_enableConnection = false;
+	public static String UDPInterface_host = "127.0.0.1";
+	public static int UDPInterface_port = 1234;
+	public static int UDPInterface_updateRate = 30;
+
 
 }

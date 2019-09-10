@@ -1,6 +1,6 @@
 /*
 *  This file is part of OpenDS (Open Source Driving Simulator).
-*  Copyright (C) 2016 Rafael Math
+*  Copyright (C) 2015 Rafael Math
 *
 *  OpenDS is free software: you can redistribute it and/or modify
 *  it under the terms of the GNU General Public License as published by
@@ -32,16 +32,16 @@ import java.util.List;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
-import eu.opends.profiler.BasicProfilerState;
 import com.jme3.app.StatsAppState;
 import com.jme3.app.state.VideoRecorderAppState;
 import com.jme3.input.Joystick;
 import com.jme3.math.Vector3f;
 import com.jme3.niftygui.NiftyJmeDisplay;
-import com.jme3.scene.Spatial.CullHint;
 import com.sun.javafx.application.PlatformImpl;
+import cz.cvut.cognitive.CogMain;
 
 import de.lessvoid.nifty.Nifty;
+import edu.wichita.haillab.UDPBroadcaster;
 import eu.opends.analyzer.DrivingTaskLogger;
 import eu.opends.analyzer.DataWriter;
 import eu.opends.audio.AudioCenter;
@@ -51,7 +51,6 @@ import eu.opends.camera.SimulatorCam;
 import eu.opends.cameraFlight.CameraFlight;
 import eu.opends.cameraFlight.NotEnoughWaypointsException;
 import eu.opends.canbus.CANClient;
-import eu.opends.car.Car;
 import eu.opends.car.ResetPosition;
 import eu.opends.car.SteeringCar;
 import eu.opends.drivingTask.DrivingTask;
@@ -80,7 +79,6 @@ import eu.opends.traffic.PhysicalTraffic;
 import eu.opends.trigger.TriggerCenter;
 import eu.opends.visualization.LightningClient;
 import eu.opends.visualization.MoviePlayer;
-import eu.opends.traffic.TrafficCar;
 
 /**
  * 
@@ -94,6 +92,8 @@ public class Simulator extends SimulationBasics
     private int frameCounter = 0;
     private boolean drivingTaskGiven = false;
     private boolean initializationFinished = false;
+    // CognitiveLoad module related vars
+    public CogMain taskCogLoad;
     
     private static Float gravityConstant;
 	public static Float getGravityConstant()
@@ -102,11 +102,6 @@ public class Simulator extends SimulationBasics
 	}
 	
 	private SteeringCar car;
-	public TrafficCar tcar1,tcar2,tcar3,tcar4,tcar5,tcar6;
-	public TrafficCar getTcar1()
-	{
-		return tcar1;
-	}
     public SteeringCar getCar()
     {
     	return car;
@@ -143,6 +138,12 @@ public class Simulator extends SimulationBasics
 		return canClient;
 	}
 	
+	private static UDPBroadcaster udpBroadcaster;
+	public static UDPBroadcaster getUDPBroadcaster() 
+	{
+		return udpBroadcaster;
+	}
+	
 	private MultiDriverClient multiDriverClient;
 	public MultiDriverClient getMultiDriverClient() 
 	{
@@ -167,11 +168,6 @@ public class Simulator extends SimulationBasics
 		showStats = show;
 		setDisplayFps(show);
     	setDisplayStatView(show);
-    	
-    	if(show)
-    		getCoordinateSystem().setCullHint(CullHint.Dynamic);
-    	else
-    		getCoordinateSystem().setCullHint(CullHint.Always);
 	}
 	
 	public void toggleStats()
@@ -266,6 +262,8 @@ public class Simulator extends SimulationBasics
 	{
 		return joystickSpringController;
 	}
+        
+        private boolean platformImplInitialized = false; //signals if PlatformImpl (JavFX) is used (=initialized OK)
 
 	
     @Override
@@ -303,19 +301,17 @@ public class Simulator extends SimulationBasics
 	public void closeDrivingTaskSelectionGUI() 
 	{
 		nifty.exit();
-        inputManager.setCursorVisible(false);
+        //inputManager.setCursorVisible(false);
         flyCam.setEnabled(true);
 	}
 
 
     public void simpleInitDrivingTask(String drivingTaskFileName, String driverName)
-    {
-    	stateManager.attach(new BasicProfilerState(false));
-    	
+    {		
     	SimulationDefaults.drivingTaskFileName = drivingTaskFileName;
     	
     	Util.makeDirectory("analyzerData");
-    	outputFolder = "analyzerData/" + Util.getDateTimeString();
+    	outputFolder = "analyzerData"+File.separator+ Util.getDateTimeString();
     	
     	initDrivingTaskLayers();
     	
@@ -336,9 +332,8 @@ public class Simulator extends SimulationBasics
     	// set gravity
     	gravityConstant = drivingTask.getSceneLoader().getGravity(SimulationDefaults.gravity);
     	getPhysicsSpace().setGravity(new Vector3f(0, -gravityConstant, 0));	
-    	//getPhysicsSpace().setAccuracy(0.008f); //TODO comment to set accuracy to 0.0166666 ?
-    	//getPhysicsSpace().setAccuracy(0.011f); // new try
-    	
+    	getPhysicsSpace().setAccuracy(0.008f); //TODO comment to set accuracy to 0.0166666 ?
+
     	PanelCenter.init(this);
 	
         Joystick[] joysticks = inputManager.getJoysticks();
@@ -349,21 +344,12 @@ public class Simulator extends SimulationBasics
     	//load map model
 		new InternalMapProcessing(this);
 		
-		// start trafficLightCenter
-		trafficLightCenter = new TrafficLightCenter(this);
-		
 		// create and place steering car
 		car = new SteeringCar(this);
 		
 		// initialize physical vehicles
 		physicalTraffic = new PhysicalTraffic(this);
 		//physicalTraffic.start(); //TODO
-		tcar1 = (TrafficCar)(getPhysicalTraffic().getTrafficObject("car1"));
-		/*tcar2 = (TrafficCar)(getPhysicalTraffic().getTrafficObject("car2"));
-		tcar3 = (TrafficCar)(getPhysicalTraffic().getTrafficObject("car3"));
-		tcar4 = (TrafficCar)(getPhysicalTraffic().getTrafficObject("car4"));
-		tcar5 = (TrafficCar)(getPhysicalTraffic().getTrafficObject("car5"));
-		tcar6 = (TrafficCar)(getPhysicalTraffic().getTrafficObject("car6"));*/
 		
 		// open TCP connection to KAPcom (knowledge component) [affects the driver name, see below]
 		if(settingsLoader.getSetting(Setting.KnowledgeManager_enableConnection, SimulationDefaults.KnowledgeManager_enableConnection))
@@ -394,7 +380,8 @@ public class Simulator extends SimulationBasics
         // setup camera settings
         cameraFactory = new SimulatorCam(this, car);
         
-
+		// start trafficLightCenter
+		trafficLightCenter = new TrafficLightCenter(this);
 		
 		// init trigger center
 		triggerCenter.setup();
@@ -414,6 +401,12 @@ public class Simulator extends SimulationBasics
 		{
 			canClient = new CANClient(this);
 			canClient.start();
+		}
+		
+		if(settingsLoader.getSetting(Setting.UDPInterface_enableConnection, SimulationDefaults.UDPInterface_enableConnection))
+		{
+			udpBroadcaster = new UDPBroadcaster(this);
+			udpBroadcaster.start();
 		}
 		
 		if(settingsLoader.getSetting(Setting.MultiDriver_enableConnection, SimulationDefaults.MultiDriver_enableConnection))
@@ -484,7 +477,10 @@ public class Simulator extends SimulationBasics
 		}
 		
 		joystickSpringController = new ForceFeedbackJoystickController(this);
-		
+                
+                // call cz.cvut handle
+                taskCogLoad = new CogMain(this);
+                
 		initializationFinished = true;
     }
 
@@ -511,9 +507,7 @@ public class Simulator extends SimulationBasics
 	 */
 	public void initializeDataWriter(int trackNumber) 
 	{
-		//dataWriter = new DataWriter(outputFolder, car, tcar1, tcar2, tcar3, tcar4, tcar5, tcar6, SimulationDefaults.driverName,
-				//SimulationDefaults.drivingTaskFileName, trackNumber);
-		dataWriter = new DataWriter(outputFolder, car, tcar1, SimulationDefaults.driverName,
+		dataWriter = new DataWriter(outputFolder, car, SimulationDefaults.driverName, 
 				SimulationDefaults.drivingTaskFileName, trackNumber);
 	}
 	
@@ -588,8 +582,10 @@ public class Simulator extends SimulationBasics
 			
 			if(eyetrackerCenter != null)
 				eyetrackerCenter.update();
-
-    		if(frameCounter == 5)
+                        
+                        taskCogLoad.update(tpf);
+                        
+		if(frameCounter == 5)
     		{
     			if(settingsLoader.getSetting(Setting.General_pauseAfterStartup, SimulationDefaults.General_pauseAfterStartup))
     				setPause(true);
@@ -597,20 +593,9 @@ public class Simulator extends SimulationBasics
     		frameCounter++;
     		
     		joystickSpringController.update(tpf);
-    		
-    		updateCoordinateSystem();
     	}
     }
-
     
-	private void updateCoordinateSystem()
-	{
-		getCoordinateSystem().getChild("x-cone").setLocalTranslation(car.getPosition().getX(), 0, 0);
-		getCoordinateSystem().getChild("y-cone").setLocalTranslation(0, car.getPosition().getY(), 0);
-		getCoordinateSystem().getChild("z-cone").setLocalTranslation(0, 0, car.getPosition().getZ());
-	}
-	
-
 	private void updateDataWriter() 
 	{
 		if (dataWriter != null && dataWriter.isDataWriterEnabled()) 
@@ -667,6 +652,9 @@ public class Simulator extends SimulationBasics
 			if(canClient != null)
 				canClient.requestStop();
 				
+			if(udpBroadcaster != null)
+				udpBroadcaster.requestStop();
+				
 			if(multiDriverClient != null)
 				multiDriverClient.close();
 			
@@ -701,8 +689,10 @@ public class Simulator extends SimulationBasics
 		super.destroy();
 		logger.info("finished destroy()");
 		
-		PlatformImpl.exit();
-		//System.exit(0);
+                if(this.platformImplInitialized) {
+    		   PlatformImpl.exit();
+                   //System.exit(0);
+                 }
     }
 	
 
@@ -730,7 +720,7 @@ public class Simulator extends SimulationBasics
     		 
     		
     		// load logger configuration file
-    		PropertyConfigurator.configure("assets/JasperReports/log4j/log4j.properties");
+    		PropertyConfigurator.configure("assets"+File.separator+"JasperReports"+File.separator+"log4j"+File.separator+"log4j.properties");
     		
     		/*
     		logger.debug("Sample debug message");
@@ -740,14 +730,24 @@ public class Simulator extends SimulationBasics
     		logger.fatal("Sample fatal message");
     		*/
     		
-    		oculusRiftAttached = OculusRift.initialize();
+                try { // OculusRift initialization may fail, it's ok to ignore, unless you actually are using the device!
+    		  oculusRiftAttached = OculusRift.initialize();
+                } catch (UnsatisfiedLinkError | Exception ex) {
+                    System.err.println("Oculus Rift: Initialization failed! OK to ignore, unless you need this device. Message was: \n"+ex.getLocalizedMessage());
+                }
     		
     		// only show severe jme3-logs
     		java.util.logging.Logger.getLogger("").setLevel(java.util.logging.Level.SEVERE);
     		
-    		PlatformImpl.startup(() -> {});
+                Simulator sim = new Simulator();
     		
-	    	Simulator sim = new Simulator();
+                try {
+    		  PlatformImpl.startup(() -> {});
+                  sim.platformImplInitialized = true;
+                  
+                } catch (RuntimeException re) {
+                    System.err.println("JavaFX: QuantumRenderer initialization failed! This is needed only for MoviePlayer, we can continue OK. Message: \n"+ re.getLocalizedMessage());
+                }
     		
 	    	StartPropertiesReader startPropertiesReader = new StartPropertiesReader();
 
@@ -809,19 +809,4 @@ public class Simulator extends SimulationBasics
 			e.printStackTrace();
 		}
 	}
-	/*public Car getTcar2() {
-		return tcar2;
-	}
-	public Car getTcar3() {
-		return tcar3;
-	}
-	public Car getTcar4() {
-		return tcar4;
-	}
-	public Car getTcar5() {
-		return tcar5;
-	}
-	public Car getTcar6() {
-		return tcar6;
-	}*/
 }

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<xs:schema targetNamespace="http://opends.eu/drivingtask/settings" 
+<xs:schema targetNamespace="http://opends.eu/drivingtask/settings"
 elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://opends.eu/drivingtask/settings">
-    
+
     <xs:element name="settings" type="settings"></xs:element>
-    
+
     <xs:complexType name="settings">
         <xs:all>
         	<xs:element name="general" type="general" maxOccurs="1"
@@ -25,10 +25,11 @@ elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns
         	<xs:element name="knowledgeManager" type="knowledgeManager"
         		maxOccurs="1" minOccurs="0">
         	</xs:element>
-        	<xs:element name="simphynity" type="simphynity"
+        	<xs:element name="simphynity" type="simphynity" maxOccurs="1" minOccurs="0"></xs:element>
+        	<xs:element name="CANInterface" type="CANInterface"
         		maxOccurs="1" minOccurs="0">
         	</xs:element>
-        	<xs:element name="CANInterface" type="CANInterface"
+        	<xs:element name="UDPInterface" type="UDPInterface"
         		maxOccurs="1" minOccurs="0">
         	</xs:element>
         	<xs:element name="multiDriver" type="multiDriver"
@@ -39,9 +40,6 @@ elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns
         	</xs:element>
         	<xs:element name="oculusRift" type="oculusRift"
         		maxOccurs="1" minOccurs="0">
-        	</xs:element>
-        	<xs:element name="maritime" type="maritime" maxOccurs="1"
-        		minOccurs="0">
         	</xs:element>
         	<xs:element name="vsimrtiServer" type="vsimrtiServer"
         		maxOccurs="1" minOccurs="0">
@@ -136,13 +134,15 @@ elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns
         			<xs:restriction base="xs:string">
         				<xs:enumeration value="ego"></xs:enumeration>
         				<xs:enumeration value="chase"></xs:enumeration>
-        				<xs:enumeration value="static_back"></xs:enumeration>
+        				<xs:enumeration value="static_back"></xs:enumeration>
+
+
         			</xs:restriction>
         		</xs:simpleType>
         	</xs:element>
         </xs:all>
     </xs:complexType>
-    
+
     <xs:complexType name="HMI">
         <xs:all>
     		<xs:element name="enableConnection" type="xs:boolean" maxOccurs="1" minOccurs="0"></xs:element>
@@ -150,7 +150,7 @@ elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns
     		<xs:element name="port" type="xs:int" maxOccurs="1" minOccurs="0"></xs:element>
     	</xs:all>
     </xs:complexType>
-    
+
     <xs:complexType name="externalVisualization">
         <xs:all>
     		<xs:element name="enableConnection" type="xs:boolean" maxOccurs="1" minOccurs="0"></xs:element>
@@ -161,7 +161,7 @@ elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns
     		<xs:element name="sendPosOriAsOneString" type="xs:boolean" minOccurs="0" maxOccurs="1"></xs:element>
     	</xs:all>
     </xs:complexType>
-    
+
     <xs:complexType name="CANInterface">
         <xs:all>
     		<xs:element name="enableConnection" type="xs:boolean" maxOccurs="1" minOccurs="0"></xs:element>
@@ -171,8 +171,16 @@ elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns
     		<xs:element name="maxSteeringAngle" type="xs:float" maxOccurs="1" minOccurs="0"></xs:element>
     	</xs:all>
     </xs:complexType>
-    
-    
+
+    <xs:complexType name="UDPInterface">
+        <xs:all>
+    		<xs:element name="enableConnection" type="xs:boolean" maxOccurs="1" minOccurs="0"></xs:element>
+    		<xs:element name="host" type="xs:string" maxOccurs="1" minOccurs="0"></xs:element>
+    		<xs:element name="port" type="xs:int" maxOccurs="1" minOccurs="0"></xs:element>
+    		<xs:element name="updateRate" type="xs:int" maxOccurs="1" minOccurs="0"></xs:element>
+    	</xs:all>
+    </xs:complexType>
+
     <xs:complexType name="controllers">
         <xs:all>
     		<xs:element name="joystick" type="joystick" maxOccurs="1" minOccurs="0"></xs:element>
@@ -180,7 +188,7 @@ elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns
     		<xs:element name="mouse" type="mouse" maxOccurs="1" minOccurs="0"></xs:element>
         </xs:all>
     </xs:complexType>
-    
+
     <xs:complexType name="vsimrtiServer">
         <xs:all>
     		<xs:element name="startServer" type="xs:boolean" maxOccurs="1" minOccurs="0"></xs:element>
@@ -316,7 +324,8 @@ elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns
         <xs:all>
 
 
-            
+
+
             <xs:element name="left" type="xs:int" maxOccurs="1" minOccurs="0">
                 </xs:element>
             <xs:element name="right" type="xs:int" maxOccurs="1" minOccurs="0">
@@ -427,7 +436,7 @@ elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns
         	</xs:element>
         	<xs:element name="scalingFactor" type="xs:float" maxOccurs="1" minOccurs="0"></xs:element>
         </xs:all>
-        
+
     </xs:complexType>
 
     <xs:complexType name="gazeSphere">
@@ -491,22 +500,5 @@ elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns
     	<xs:attribute name="axisID" type="xs:int"></xs:attribute>
     	<xs:attribute name="invert" type="xs:boolean"></xs:attribute>
     	<xs:attribute name="sensitivity" type="xs:float"></xs:attribute>
-    </xs:complexType>
-
-    <xs:complexType name="maritime">
-    	<xs:sequence>
-    		<xs:element name="displayMode" maxOccurs="1"
-    			minOccurs="0">
-    			<xs:simpleType>
-    				<xs:restriction base="xs:string">
-    					<xs:enumeration value="Off"></xs:enumeration>
-    					<xs:enumeration value="Panel"></xs:enumeration>
-    					<xs:enumeration value="Compass"></xs:enumeration>
-    					<xs:enumeration value="MultiFunctionDisplay"></xs:enumeration>
-    					<xs:enumeration value="All"></xs:enumeration>
-    				</xs:restriction>
-    			</xs:simpleType>
-    		</xs:element>
-    	</xs:sequence>
     </xs:complexType>
 </xs:schema>
