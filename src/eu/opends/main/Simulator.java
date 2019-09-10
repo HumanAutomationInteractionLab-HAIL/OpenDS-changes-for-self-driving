@@ -1,6 +1,6 @@
 /*
 *  This file is part of OpenDS (Open Source Driving Simulator).
-*  Copyright (C) 2016 Rafael Math
+*  Copyright (C) 2015 Rafael Math
 *
 *  OpenDS is free software: you can redistribute it and/or modify
 *  it under the terms of the GNU General Public License as published by
@@ -32,18 +32,17 @@ import java.util.List;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
-import eu.opends.profiler.BasicProfilerState;
 import com.jme3.app.StatsAppState;
-//import com.jme3.app.state.VideoRecorderAppState;
+import com.jme3.app.state.VideoRecorderAppState;
 import com.jme3.input.Joystick;
-import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.niftygui.NiftyJmeDisplay;
-import com.jme3.scene.Spatial;
-import com.jme3.scene.Spatial.CullHint;
 import com.sun.javafx.application.PlatformImpl;
+import cz.cvut.cognitive.CogMain;
 
 import de.lessvoid.nifty.Nifty;
+
+
 import eu.opends.analyzer.DrivingTaskLogger;
 import eu.opends.analyzer.DataWriter;
 import eu.opends.audio.AudioCenter;
@@ -88,15 +87,14 @@ import eu.opends.visualization.MoviePlayer;
  */
 public class Simulator extends SimulationBasics
 {
-	
-	public native static String GetPropertyValue(String aName) throws Exception;
-	
 	private final static Logger logger = Logger.getLogger(Simulator.class);
 
     private Nifty nifty;
     private int frameCounter = 0;
     private boolean drivingTaskGiven = false;
     private boolean initializationFinished = false;
+    // CognitiveLoad module related vars
+    public CogMain taskCogLoad;
     
     private static Float gravityConstant;
 	public static Float getGravityConstant()
@@ -165,11 +163,6 @@ public class Simulator extends SimulationBasics
 		showStats = show;
 		setDisplayFps(show);
     	setDisplayStatView(show);
-    	
-    	if(show)
-    		getCoordinateSystem().setCullHint(CullHint.Dynamic);
-    	else
-    		getCoordinateSystem().setCullHint(CullHint.Always);
 	}
 	
 	public void toggleStats()
@@ -265,7 +258,9 @@ public class Simulator extends SimulationBasics
 		return joystickSpringController;
 	}
 
+    private boolean platformImplInitialized = false; //signals if PlatformImpl (JavFX) is used (=initialized OK)
 	
+
     @Override
     public void simpleInitApp()
     {
@@ -308,12 +303,10 @@ public class Simulator extends SimulationBasics
 
     public void simpleInitDrivingTask(String drivingTaskFileName, String driverName)
     {
-    	stateManager.attach(new BasicProfilerState(false));
-    	
     	SimulationDefaults.drivingTaskFileName = drivingTaskFileName;
     	
     	Util.makeDirectory("analyzerData");
-    	outputFolder = "analyzerData/" + Util.getDateTimeString();
+    	outputFolder = "analyzerData"+File.separator+ Util.getDateTimeString();
     	
     	initDrivingTaskLayers();
     	
@@ -334,8 +327,7 @@ public class Simulator extends SimulationBasics
     	// set gravity
     	gravityConstant = drivingTask.getSceneLoader().getGravity(SimulationDefaults.gravity);
     	getPhysicsSpace().setGravity(new Vector3f(0, -gravityConstant, 0));	
-    	//getPhysicsSpace().setAccuracy(0.008f); //TODO comment to set accuracy to 0.0166666 ?
-    	//getPhysicsSpace().setAccuracy(0.011f); // new try
+    	getPhysicsSpace().setAccuracy(0.008f); //TODO comment to set accuracy to 0.0166666 ?
     	
     	PanelCenter.init(this);
 	
@@ -346,9 +338,6 @@ public class Simulator extends SimulationBasics
         
     	//load map model
 		new InternalMapProcessing(this);
-		
-		// start trafficLightCenter
-		trafficLightCenter = new TrafficLightCenter(this);
 		
 		// create and place steering car
 		car = new SteeringCar(this);
@@ -386,8 +375,9 @@ public class Simulator extends SimulationBasics
         // setup camera settings
         cameraFactory = new SimulatorCam(this, car);
         
+		// start trafficLightCenter
+		trafficLightCenter = new TrafficLightCenter(this);
 
-		
 		// init trigger center
 		triggerCenter.setup();
 		
@@ -477,6 +467,9 @@ public class Simulator extends SimulationBasics
 		
 		joystickSpringController = new ForceFeedbackJoystickController(this);
 		
+                // call cz.cvut handle
+                taskCogLoad = new CogMain(this);
+
 		initializationFinished = true;
     }
 
@@ -579,6 +572,8 @@ public class Simulator extends SimulationBasics
 			if(eyetrackerCenter != null)
 				eyetrackerCenter.update();
 
+                        taskCogLoad.update(tpf);
+
     		if(frameCounter == 5)
     		{
     			if(settingsLoader.getSetting(Setting.General_pauseAfterStartup, SimulationDefaults.General_pauseAfterStartup))
@@ -587,19 +582,8 @@ public class Simulator extends SimulationBasics
     		frameCounter++;
     		
     		joystickSpringController.update(tpf);
-    		
-    		updateCoordinateSystem();
     	}
     }
-
-    
-	private void updateCoordinateSystem()
-	{
-		getCoordinateSystem().getChild("x-cone").setLocalTranslation(car.getPosition().getX(), 0, 0);
-		getCoordinateSystem().getChild("y-cone").setLocalTranslation(0, car.getPosition().getY(), 0);
-		getCoordinateSystem().getChild("z-cone").setLocalTranslation(0, 0, car.getPosition().getZ());
-	}
-	
 
 	private void updateDataWriter() 
 	{
@@ -691,66 +675,15 @@ public class Simulator extends SimulationBasics
 		super.destroy();
 		logger.info("finished destroy()");
 		
-		if (physicalTraffic.getMultiThreadingEnable()){
-			physicalTraffic.executorShutdown();
-		}
-		
+                if(this.platformImplInitialized) {
 		PlatformImpl.exit();
 		//System.exit(0);
+    }
     }
 	
 
     public static void main(String[] args) 
     {    
-    	
-    	/*// License library, list of codes returned from the function
-    	String licenseCode0 = "ERROR_SUCCESS";
-		String licenseCode234 = "ERROR_MODE_DATA";
-		String licenseCode13 = "ERROR_INVALID_DATA";
-		String licenseCode5 = "ERROR_ACCESS_DENIED";
-		
-		
-		String daysLeft;
-		// License library, list of properties to extract
-		String getTrialName = "TrialName";
-		
-		// License implementation might be extended to include following features
-		String getLicReqContact = "LicReqContact";
-		String getbuildDate = "BuildDate";
-		String getBuyUrl = "BuyUrl";
-		String getTrialExtendContract = "TrialExtendContract";
-		String getLicenseKey = "LicenseKey";
-		String getTrialLeft = "TrialLeft";
-		String getQuantity = "Quantity";
-		String getTrialMU = "TrialMU";
-		String getCompId = "CompId";
-		
-		
-		
-		// proceed with the loop if license is OK, other ways skip the loop
-		try {
-	          String value = GetPropertyValue(getTrialName); 
-	          if ( value == licenseCode0 ){
-	        	  System.out.println(licenseCode0);
-	          }
-	          else if ( value == licenseCode5){
-	        	  System.out.println(licenseCode5);
-	        	  System.exit(0);
-	          }
-	          else if ( value == licenseCode234 ){
-	        	  System.out.println(licenseCode234);
-	        	  System.exit(0);
-	          }
-	          else if ( value == licenseCode13 ){
-	        	  System.out.println(licenseCode13);
-	        	  System.exit(0);
-	          }
-	     } catch (Exception e) {
-	         e.printStackTrace();
-	         logger.fatal("Could not initialize the license", e);
-	     }
-	    */
-    	
     	try
     	{
     		// copy native files of force feedback joystick driver
@@ -773,7 +706,7 @@ public class Simulator extends SimulationBasics
     		 
     		
     		// load logger configuration file
-    		PropertyConfigurator.configure("assets/JasperReports/log4j/log4j.properties");
+    		PropertyConfigurator.configure("assets"+File.separator+"JasperReports"+File.separator+"log4j"+File.separator+"log4j.properties");
     		
     		/*
     		logger.debug("Sample debug message");
@@ -783,14 +716,24 @@ public class Simulator extends SimulationBasics
     		logger.fatal("Sample fatal message");
     		*/
     		
+                try { // OculusRift initialization may fail, it's ok to ignore, unless you actually are using the device!
     		oculusRiftAttached = OculusRift.initialize();
+                } catch (UnsatisfiedLinkError | Exception ex) {
+                    System.err.println("Oculus Rift: Initialization failed! OK to ignore, unless you need this device. Message was: \n"+ex.getLocalizedMessage());
+                }
     		
     		// only show severe jme3-logs
     		java.util.logging.Logger.getLogger("").setLevel(java.util.logging.Level.SEVERE);
     		
+                Simulator sim = new Simulator();
+
+                try {
     		PlatformImpl.startup(() -> {});
+                  sim.platformImplInitialized = true;
     		
-	    	Simulator sim = new Simulator();
+                } catch (RuntimeException re) {
+                    System.err.println("JavaFX: QuantumRenderer initialization failed! This is needed only for MoviePlayer, we can continue OK. Message: \n"+ re.getLocalizedMessage());
+                }
     		
 	    	StartPropertiesReader startPropertiesReader = new StartPropertiesReader();
 
